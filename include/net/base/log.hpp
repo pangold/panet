@@ -104,7 +104,7 @@ public:
 #if defined(_MSC_VER) || defined(_WIN32)
         _vsnprintf(text, sizeof(text), format, ap);
 #else
-        vsnprintf(buf, buflen, format, ap);
+        vsnprintf(text, sizeof(text), format, ap);
 #endif
         va_end(ap);
         thread_.push(&logger::print_impl, this, level, std::string(text));
