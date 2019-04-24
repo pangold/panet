@@ -5,17 +5,15 @@
 #include <memory>
 #include <boost/asio.hpp>
 #include <net/base/log.hpp>
+#include <net/base/noncopyable.hpp>
 #include <net/tcp/session.hpp>
 
 namespace pan { namespace net { namespace tcp {
 
-class client {
+class client : public noncopyable {
 public:
     using session_ptr = session::pointer;
     using handler_type = session::handler_type;
-
-    client(const client&) = delete;
-    client& operator=(const client&) = delete;
 
     client(boost::asio::io_context& io_context, handler_type& handler)
         : io_context_(io_context)

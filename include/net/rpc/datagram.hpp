@@ -78,6 +78,7 @@ inline static datagram_ptr make_reply(std::uint32_t message_id, std::uint8_t cod
     datagram->body_size = 0;
     return datagram;
 }
+
 inline static datagram_ptr make_reply(std::uint32_t message_id, std::uint8_t code, const void* data, std::uint32_t size)
 {
     datagram_ptr datagram = std::make_shared<struct datagram>();

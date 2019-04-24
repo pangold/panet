@@ -5,16 +5,14 @@
 #include <cstdint>
 #include <boost/asio.hpp>
 #include <net/base/log.hpp>
+#include <net/base/noncopyable.hpp>
 #include <net/tcp/session.hpp>
 
 namespace pan { namespace net { namespace tcp {
 
-class server {
+class server : public noncopyable {
 public:
     using handler_type = session::handler_type;
-
-    server(const server&) = delete;
-    server& operator=(const server&) = delete;
 
     server(boost::asio::io_context& io_context, std::uint16_t port, handler_type& handler)
         : io_context_(io_context)

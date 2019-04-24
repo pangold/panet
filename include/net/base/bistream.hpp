@@ -57,38 +57,13 @@ public:
         std::uint32_t bit_offset = head_ & 0x07;
         std::uint32_t next_bit_offset = (bit_offset + bit_count) & 0x07;
         std::uint32_t bits_free_this_byte = 7 - bit_offset;
-        std::uint8_t current_mask = 0xff << bit_offset;      // 11111100
-        std::uint8_t next_mask = ~(0xff << next_bit_offset); // 00000011 or 00000001
+        std::uint8_t current_mask = 0xff << bit_offset;
+        std::uint8_t next_mask = ~(0xff << next_bit_offset);
         if (bits_free_this_byte < bit_count) {
             out = (buffer_[byte_offset] & current_mask) >> bit_offset | 
                 (buffer_[byte_offset + 1] & next_mask) << (bit_count - next_bit_offset);
         } else {
             out = (buffer_[byte_offset] & current_mask & next_mask) >> bit_offset;
-        }
-        head_ = result_size;
-    }
-
-    void read_bits2(std::uint8_t& out, std::size_t bit_count)
-    {
-        assert(bit_count <= 8);
-        std::size_t result_size = head_ + bit_count;
-        if (result_size > capacity_) {
-            // throw std::exception("memory overread");
-            return;
-        }
-        std::uint32_t byte_offset = head_ >> 3;
-        std::uint32_t bit_offset = head_ & 0x07;
-
-        if (bit_count > (7 - bit_offset)) {
-            std::uint32_t next_bit_offset = (bit_offset + bit_count) & 0x07;
-            std::uint8_t current_mask = 0xff << bit_offset;      // 11111100
-            std::uint8_t next_mask = ~(0xff << next_bit_offset); // 00000011 or 00000001
-            out = (buffer_[byte_offset] & current_mask) >> bit_offset |
-                (buffer_[byte_offset + 1] & next_mask) << (bit_count - next_bit_offset);
-        }
-        else {
-            std::uint8_t mask = (0xff << bit_offset) & (0xff >> (8 - bit_offset - bit_count));
-            out = (buffer_[byte_offset] & mask) >> bit_offset;
         }
         head_ = result_size;
     }

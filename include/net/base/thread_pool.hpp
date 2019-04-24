@@ -3,12 +3,13 @@
 
 #include <ctime>
 #include <vector>
-#include <net/base/thread.hpp>
 #include <net/base/log.hpp>
+#include <net/base/noncopyable.hpp>
+#include <net/base/thread.hpp>
 
 namespace pan {
 
-class thread_pool {
+class thread_pool : public noncopyable {
 public:
     explicit thread_pool(std::size_t thread_count = 2, std::size_t max_task_per_thread = 1024)
         : threads_()

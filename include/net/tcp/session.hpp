@@ -5,13 +5,15 @@
 #include <cstdint>
 #include <boost/asio.hpp>
 #include <net/base/log.hpp>
+#include <net/base/noncopyable.hpp>
 #include <net/tcp/buffer.hpp>
 #include <net/handler_base.hpp>
 
 namespace pan { namespace net { namespace tcp {
 
 class session 
-    : public std::enable_shared_from_this<session> {
+    : public std::enable_shared_from_this<session>
+    , public noncopyable {
 public:
     using handler_type = handler_base<session>;
     using buffer_type = buffer<1024>;
@@ -19,9 +21,6 @@ public:
     using pointer = std::shared_ptr<session>;
 
 public:
-    session(const session&) = delete;
-    session& operator=(const session&) = delete;
-
     session(key_type id, boost::asio::ip::tcp::socket socket, handler_type& handler)
         : id_(id)
         , socket_(std::move(socket))
