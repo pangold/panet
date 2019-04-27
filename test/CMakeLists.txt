@@ -31,7 +31,8 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
 endif()
 
 # Now simply link against gtest or gtest_main as needed. Eg
+
 aux_source_directory(. src_file)
 add_executable(base-test ${src_file})
-target_link_libraries(base-test gtest_main)
+target_link_libraries(base-test gtest_main ${link_protobuf})
 add_test(NAME base_test COMMAND base)

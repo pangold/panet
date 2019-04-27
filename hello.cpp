@@ -2,16 +2,7 @@
 #include <vector>
 #include <iostream>
 //
-#include <net/tcp/server.hpp>
-#include <net/tcp/client.hpp>
-// 
-#include <net/echo/server_handler.hpp>
-#include <net/echo/client_handler.hpp>
-// 
-#include <net/rpc/server_handler.hpp>
-#include <net/rpc/client_handler.hpp>
-
-
+#include <pan/net.hpp>
 
 using namespace pan::net;
 
