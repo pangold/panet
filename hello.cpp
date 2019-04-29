@@ -10,12 +10,10 @@ using namespace pan::net;
 void server(uint16_t port = 8888)
 {
     try {
-        boost::asio::io_context io_context;
-        echo::server_handler<tcp::session> handler;
-        tcp::server server(io_context, port, handler);
-        io_context.run();
+        echo::server server(port);
+        server.run();
     }
-    catch (const std::exception& e) {
+    catch (std::exception& e) {
         std::cerr << "server: " << e.what() << std::endl;
     }
 }
@@ -23,22 +21,13 @@ void server(uint16_t port = 8888)
 void client(const std::string host = "localhost", uint16_t port = 8888)
 {
     try {
-        boost::asio::io_context io_context;
-        echo::client_handler<tcp::session> handler;
-        tcp::client client(io_context, handler);
-
-        if (!client.connect(host, port)) return;
-        std::thread thread([&io_context]() { io_context.run(); });
-
-        int nnn = 100000;
+        echo::client client(host, port);
+        int nnn = 10000;
         while (--nnn != 0) {
-            handler.write(std::string("0123456789"));
+            client.handler().write(std::string("0123456789"));
         }
-
-        client.close();
-        thread.join();
     }
-    catch (const std::exception& e) {
+    catch (std::exception& e) {
         std::cerr << "client: " << e.what() << std::endl;
     }
 }
@@ -65,19 +54,17 @@ void voidf(int x, int y)
 void rpc_server(uint16_t port = 8888)
 {
     try {
-        boost::asio::io_context io_context;
-        rpc::server_handler<tcp::session> handler;
-        tcp::server server(io_context, port, handler);
+        rpc::v2::server server(port);
         math<int> m;
-        handler.bind("add", add<int>);
-        handler.bind("fadd", add<float>);
-        handler.bind("dadd", add<double>);
-        handler.bind("math.add", &math<int>::add, &m);
-        handler.bind("math.minus", &math<int>::minus, &m);
-        handler.bind("math.multiply", &math<int>::multiply, &m);
-        handler.bind("math.divide", &math<int>::divide, &m);
-        handler.bind("voidf", voidf);
-        io_context.run();
+        server.handler().bind("add", add<int>);
+        server.handler().bind("fadd", add<float>);
+        server.handler().bind("dadd", add<double>);
+        server.handler().bind("math.add", &math<int>::add, &m);
+        server.handler().bind("math.minus", &math<int>::minus, &m);
+        server.handler().bind("math.multiply", &math<int>::multiply, &m);
+        server.handler().bind("math.divide", &math<int>::divide, &m);
+        server.handler().bind("voidf", voidf);
+        server.run();
     }
     catch (const std::exception& e) {
         std::cerr << "server: " << e.what() << std::endl;
@@ -87,55 +74,47 @@ void rpc_server(uint16_t port = 8888)
 void rpc_client(const std::string host = "localhost", uint16_t port = 8888)
 {
     try {
-        boost::asio::io_context io_context;
-        rpc::client_handler<tcp::session> handler;
-        tcp::client client(io_context, handler);
-        if (!client.connect(host, port)) return;
-
-        std::thread thread([&io_context]() { io_context.run(); });
+        rpc::v2::client client(host, port);
 
         float result2;
         double result3;
         int result1, result4, result5, result6, result7, result8;
 
-        if (handler.call<int>(result1, "add", 200, 100)) {
+        if (client.handler().call<int>(result1, "add", 200, 100)) {
             std::cout << "result1: " << result1 << std::endl;
         }
 
-        if (handler.call<float>(result2, "fadd", 2.2f, 1.1f)) {
+        if (client.handler().call<float>(result2, "fadd", 2.2f, 1.1f)) {
             std::cout << "result2: " << result2 << std::endl;
         }
 
-        if (handler.call<double>(result3, "dadd", 2.6, 9.1)) {
+        if (client.handler().call<double>(result3, "dadd", 2.6, 9.1)) {
             std::cout << "result3: " << result3 << std::endl;
         }
 
-        if (handler.call<int>(result4, "math.add", 200, 100)) {
+        if (client.handler().call<int>(result4, "math.add", 200, 100)) {
             std::cout << "result4: " << result4 << std::endl;
         }
 
-        if (handler.call<int>(result5, "math.minus", 200, 100)) {
+        if (client.handler().call<int>(result5, "math.minus", 200, 100)) {
             std::cout << "result5: " << result5 << std::endl;
         }
 
-        if (handler.call<int>(result6, "math.multiply", 200, 100)) {
+        if (client.handler().call<int>(result6, "math.multiply", 200, 100)) {
             std::cout << "result6: " << result6 << std::endl;
         }
 
-        if (handler.call<int>(result7, "math.divide", 200, 100)) {
+        if (client.handler().call<int>(result7, "math.divide", 200, 100)) {
             std::cout << "result7: " << result7 << std::endl;
         }
 
-        if (handler.call<int>(result8, "voidf", 200, 100)) {
+        if (client.handler().call<int>(result8, "voidf", 200, 100)) {
             std::cout << "result8: " << result8 << std::endl;
         }
 
-        if (handler.call<int>(result8, "voiddf", 200, 100)) {
+        if (client.handler().call<int>(result8, "voiddf", 200, 100)) {
             std::cout << "result8: " << result8 << std::endl;
         }
-
-        client.close();
-        thread.join();
     }
     catch (const std::exception& e) {
         std::cerr << "client: " << e.what() << std::endl;
