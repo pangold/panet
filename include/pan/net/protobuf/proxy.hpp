@@ -55,7 +55,7 @@ public:
     {
         auto it = callbacks_.find(message->GetDescriptor());
         if (it == callbacks_.end()) {
-            throw std::exception("unmatch callback");
+            throw std::exception("unsupported message");
         }
         auto descriptor = message->GetDescriptor();
         callbacks_[descriptor]->on_message(session, message);

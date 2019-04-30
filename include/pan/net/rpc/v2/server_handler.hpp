@@ -12,6 +12,7 @@ template <typename Session>
 class server_handler : public pan::net::handler_base<Session> {
     friend typename Session;
     using executor_type = stream_executor<istream, ostream>;
+
 public:
     explicit server_handler(std::size_t thread_count = 2, std::size_t max_task_per_thread = 1024)
         : codec_()
@@ -42,6 +43,7 @@ public:
 protected:
     std::size_t on_message(session_ptr session, const void* data, std::size_t size) override
     {
+        // FIXME: this is edge trigger
         try {
             return codec_.on_message(session, data, size);
         }

@@ -36,11 +36,11 @@ public:
     {
         istream is(data, size);
         auto datagram = parse_to_datagram(is);
-        if (auto message = parse_to_message(datagram)) {
+        if (datagram && auto message = parse_to_message(datagram)) {
             proxy_.on_message(session, message);
             return is.size();
         }
-        return 0;
+        return datagram ? size : 0;
     }
 
 private:

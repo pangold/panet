@@ -69,13 +69,6 @@ public:
     }
 
 private:
-    // what if we need heart beat datagram.
-    // solution 1:
-    // can I just keep name&data_ empty?
-    // then, there will be 12 bytes length of a package
-    // (name has 4 extra bytes for its length, even though its value is 0)
-    // solution 2:
-    // set name = "hb" or "heart beat", then there will be 14 or 22 bytes length.
     int32_t len_;
     std::string name_;
     std::string data_;

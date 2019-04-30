@@ -45,14 +45,8 @@ public:
         catch (const respond_pool::timeout_error& /*e*/) {
             LOG_ERROR("function %s: timeout", name.c_str());
         }
-        catch (const std::bad_alloc& e) {
-            LOG_ERROR(e.what());
-        }
         catch (const std::exception& e) {
             LOG_ERROR(e.what());
-        }
-        catch (...) {
-            LOG_ERROR("function %s: unknown error", name.c_str());
         }
         return false;
     }
