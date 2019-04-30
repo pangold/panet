@@ -63,10 +63,36 @@ void call(rpc::client& client)
     }
 }
 
+void bind(rpc::v2::server& server, math<int>& m)
+{
+    server.bind("add", add<int>);
+    server.bind("fadd", add<float>);
+    server.bind("dadd", add<double>);
+    server.bind("math.add", &math<int>::add, &m);
+    server.bind("math.minus", &math<int>::minus, &m);
+    server.bind("math.multiply", &math<int>::multiply, &m);
+    server.bind("math.divide", &math<int>::divide, &m);
+    server.bind("voidf", voidf);
+}
+
+void call(rpc::v2::client& client)
+{
+    std::cout << client.call<int>("add", 12, 30) << std::endl;
+    std::cout << client.call<int>("add", 200, 100) << std::endl;
+    std::cout << client.call<float>("fadd", 2.2f, 1.1f) << std::endl;
+    std::cout << client.call<double>("dadd", 2.6, 9.1) << std::endl;
+    std::cout << client.call<int>("math.add", 200, 100) << std::endl;
+    std::cout << client.call<int>("math.minus", 200, 100) << std::endl;
+    std::cout << client.call<int>("math.multiply", 200, 100) << std::endl;
+    std::cout << client.call<int>("math.divide", 200, 100) << std::endl;
+    std::cout << client.call<int>("voidf", 200, 100) << std::endl;
+    std::cout << client.call<int>("voiddf", 200, 100) << std::endl;
+}
+
 void rpc_server(uint16_t port = 8888)
 {
     try {
-        rpc::server server(port);
+        rpc::v2::server server(port);
         math<int> m;
         bind(server, m);
         server.run();
@@ -79,7 +105,7 @@ void rpc_server(uint16_t port = 8888)
 void rpc_client(const std::string host = "localhost", uint16_t port = 8888)
 {
     try {
-        rpc::client client(host, port);
+        rpc::v2::client client(host, port);
         call(client);
     }
     catch (const std::exception& e) {
@@ -87,12 +113,16 @@ void rpc_client(const std::string host = "localhost", uint16_t port = 8888)
     }
 }
 
-//int main(int argc, char** argv)
-//{
-//#if defined(AS_SERVER)
-//    rpc_server();
-//#else
-//    rpc_client();
-//#endif
-//    return 0;
-//}
+#if defined(EXAMPLE)
+
+int main(int argc, char** argv)
+{
+#if defined(AS_SERVER)
+    rpc_server();
+#else
+    rpc_client();
+#endif // AS_SERVER
+    return 0;
+}
+
+#endif // EXAMPLE

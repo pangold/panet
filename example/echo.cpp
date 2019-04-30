@@ -32,12 +32,16 @@ void client(const std::string host = "localhost", uint16_t port = 8888)
     }
 }
 
-//int main(int argc, char** argv)
-//{
-//#if defined(AS_SERVER)
-//    server();
-//#else
-//    client();
-//#endif
-//    return 0;
-//}
+#if defined(EXAMPLE)
+
+int main(int argc, char** argv)
+{
+#if defined(AS_SERVER)
+    server();
+#else
+    client();
+#endif // AS_SERVER
+    return 0;
+}
+
+#endif // EXAMPLE
