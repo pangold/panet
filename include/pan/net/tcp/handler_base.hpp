@@ -10,6 +10,12 @@ namespace pan { namespace net { namespace tcp {
 
 class handler_base {
 public:
+    typedef session<handler_base> session_type;
+    virtual ~handler_base();
+};
+
+class handler_base {
+public:
     typedef session session_type;
     typedef session_type::key_type key_type;
     typedef session_type::pointer session_ptr;
