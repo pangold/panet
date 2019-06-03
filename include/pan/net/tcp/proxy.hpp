@@ -11,7 +11,7 @@ namespace pan { namespace net { namespace tcp {
 
 template <typename Handler>
 class basic_cluster : public noncopyable {
-    using handler_type = Handler;
+    typedef Handler handler_type;
 
 public:
     explicit basic_cluster(uint16_t port = 8889)

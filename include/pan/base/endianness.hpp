@@ -9,7 +9,7 @@
 // FIXME: according to the real value of the platform
 #define PLATFORM_ENDIANNESS   BIG_ENDIANNESS
 
-namespace pan { namespace net {
+namespace pan { 
 
 // for handling a data with 2 bytes
 inline std::uint16_t byte_swap_2(std::uint16_t data)
@@ -107,6 +107,6 @@ inline T swap_helper(T data)
     return data;
 }
 
-}}
+}
 
 #endif // __PAN_NET_ENDIANNESS_HPP__

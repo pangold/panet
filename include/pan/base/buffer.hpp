@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <cassert>
 
-namespace pan { namespace net { namespace tcp {
+namespace pan { 
 
 template <std::size_t PageSize>
 class buffer {
@@ -94,6 +94,6 @@ private:
     volatile std::size_t free_index_;
 };
 
-}}}
+}
 
 #endif // __PAN_NET_TCP_BUFFER_HPP__

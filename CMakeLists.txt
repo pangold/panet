@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.8)
 
-set (name pango CACHE PATH "name of project")
+set (name pango CACHE STRING "name of project")
 project (${name})
 
 set (dir_inc_boost "/usr/local/include" CACHE PATH "include of boost")

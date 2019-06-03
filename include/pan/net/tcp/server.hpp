@@ -1,53 +1,34 @@
 #ifndef __PAN_NET_TCP_SERVER_HPP__
 #define __PAN_NET_TCP_SERVER_HPP__
 
-#include <memory>
-#include <cstdint>
 #include <boost/asio.hpp>
 #include <pan/base.hpp>
-#include <pan/net/tcp/session.hpp>
 
 namespace pan { namespace net { namespace tcp {
 
+template <typename Handler>
 class server : public noncopyable {
 public:
-    using handler_type = session::handler_type;
+    typedef Handler handler_type;
 
-    server(boost::asio::io_context& io_context, std::uint16_t port, handler_type& handler)
-        : io_context_(io_context)
-        , acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
-        , handler_(handler)
-    {
-        accept();
-    }
+    explicit server(std::uint16_t port = 8888);
+    virtual ~server();
 
-    virtual ~server()
-    {
-        io_context_.post([this]() { acceptor_.close(); });
-    }
+    void run();
+    
+    handler_type& handler() { return handler_; }
+    const handler_type& handler() const { return handler_; }
 
-protected:
-    void accept()
-    {
-        acceptor_.async_accept(
-            [this](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
-            if (!ec) {
-                static session::key_type id = 0;
-                std::make_shared<session>(0, std::move(socket), handler_)->start();
-            } else {
-                LOG_ERROR("tcp.server.accept.error: %s", ec.message().c_str());
-            }
-            accept();
-        });
-    }
-
-protected:
-    boost::asio::io_context& io_context_;
-    boost::asio::ip::tcp::acceptor acceptor_;
-    handler_type& handler_;
-
+private:
+    boost::asio::io_context io_context_;
+    handler_type handler_;
+    acceptor acceptor_;
+    std::thread thread_;
+    
 };
 
 }}}
+
+#include <pan/net/tcp/server_impl.hpp>
 
 #endif // __PAN_NET_TCP_SERVER_HPP__

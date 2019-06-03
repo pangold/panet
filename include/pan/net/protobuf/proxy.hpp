@@ -2,7 +2,7 @@
 #define __PAN_NET_PROTOBUF_PROXY_HPP__
 
 #include <memory>
-#include <unordered_map>
+#include <map>
 #include <functional>
 #include <google/protobuf/message.h>
 
@@ -22,8 +22,10 @@ public:
 template <typename T, typename Session>
 class callback : public callback_base<Session> {
 public:
-    explicit callback(std::function<void(session_ptr, std::shared_ptr<T>)> cb)
-        : callback_(cb)
+    using value_type = std::function<void(session_ptr, std::shared_ptr<T>)>;
+
+    explicit callback(value_type cb)
+        : callback_(std::move(cb))
     { }
 
     void on_message(session_ptr session, message_ptr message)
@@ -33,7 +35,7 @@ public:
     }
 
 private:
-    std::function<void(session_ptr, std::shared_ptr<T>)> callback_;
+    value_type callback_;
 
 };
 
@@ -62,7 +64,7 @@ public:
     }
 
 private:
-    std::unordered_map<const google::protobuf::Descriptor*, callback_ptr> callbacks_;
+    std::map<const google::protobuf::Descriptor*, callback_ptr> callbacks_;
 
 };
 
