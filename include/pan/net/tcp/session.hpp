@@ -26,42 +26,97 @@
 
 namespace pan { namespace net { namespace tcp {
 
-class handler_base;
+template <typename Handler>
 class session 
-    : public std::enable_shared_from_this<session>
-    , public noncopyable {
+    : public std::enable_shared_from_this<session<Handler>>
+    , public pan::noncopyable {
 public:
-    typedef handler_base handler_type;
+    typedef Handler handler_type;
     typedef pan::buffer<1024> buffer_type;
     typedef std::size_t key_type;
-    typedef std::shared_ptr<session> pointer;
+    typedef session<handler_type> value_type;
+    typedef std::shared_ptr<value_type> pointer;
+    typedef void* content_type;
 
-public:
-    session(key_type id, boost::asio::ip::tcp::socket socket, handler_type& handler);
-    virtual ~session();
+    session(key_type id, boost::asio::ip::tcp::socket socket, handler_type& handler)
+        : id_(id)
+        , socket_(std::move(socket))
+        , read_buffer_()
+        , handler_(handler)
+    {
 
-    key_type id() const { return id_; }
+    }
 
-    void start();
-    void stop();
-    void write(const void* data, std::size_t size);
-    void write(const std::string& data);
+    virtual ~session()
+    {
+        stop();
+    }
+
+    key_type id() const 
+    {
+        return id_; 
+    }
+
+    template <typename T>
+    void set_content(T* content)
+    {
+        content_ = reinterpret_cast<void*>(content);
+    }
+
+    template <typename T>
+    T* content() const
+    {
+        return reinterpret_cast<T*>(content_);
+    }
+
+    void start()
+    {
+        read();
+    }
+
+    void stop()
+    {
+        pan::net::asio::close(socket_);
+    }
+
+    void write(const void* data, std::size_t size)
+    {
+        auto self = shared_from_this();
+        auto success = [this, self](const void* d, size_t s) { handler_.on_write(self, d, s); };
+        auto failure = [self]() { self->stop(); };
+        pan::net::asio::write(socket_, data, size, success, failure);
+    }
+
+    void read()
+    {
+        auto self = shared_from_this();
+        auto success = [self](const void* d, size_t s) { self->received(d, s); self->read(); };
+        auto failure = [self]() { self->stop(); };
+        pan::net::asio::read(socket_, read_buffer_.free_data(), read_buffer_.free_size(), success, failure);
+    }
 
 private:
-    void received_(std::size_t size);
-    void read_();
-    void write_(const char* buffer, std::size_t size);
+    void received(const void* data, size_t size)
+    {
+        read_buffer_.push(size);
+        auto len = handler_.on_message(this->shared_from_this(), read_buffer_.data(), read_buffer_.size());
+        if (len > 0) {
+            read_buffer_.pop(std::min(len, size));
+        }
+        else if (read_buffer_.full()) {
+            read_buffer_.lengthen();
+        }
+    }
 
-private:
+protected:
     key_type id_;
     boost::asio::ip::tcp::socket socket_;
     buffer_type read_buffer_;
     handler_type& handler_;
+    content_type content_;
 
 };
 
 }}}
-
-#include <pan/net/tcp/session_impl.hpp>
 
 #endif // __PAN_NET_TCP_SESSION_HPP__

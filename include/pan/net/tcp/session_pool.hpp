@@ -6,7 +6,7 @@
 
 namespace pan { namespace net { namespace tcp {
     
-typedef pan::map<session::key_type, session::pointer> session_pool;
+// typedef pan::map<session_key_type, session_ptr> session_pool;
 
 }}}
 

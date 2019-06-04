@@ -148,7 +148,7 @@ public:
     class not_found_error : public std::runtime_error {
     public:
         not_found_error(key_type key)
-            : std::runtime_error("key [ " + std::to_strong(key) + " ] is not found")
+            : std::runtime_error("key [ " + std::to_string(key) + " ] is not found")
         { }
     };
 

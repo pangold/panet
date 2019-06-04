@@ -10,7 +10,7 @@
 namespace pan { namespace net { namespace tcp {
 
 template <typename Handler>
-class basic_cluster : public noncopyable {
+class basic_cluster : public pan::noncopyable {
     typedef Handler handler_type;
 
 public:
