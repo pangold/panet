@@ -38,8 +38,8 @@ public:
     typedef std::shared_ptr<value_type> pointer;
     typedef void* content_type;
 
-    session(key_type id, boost::asio::ip::tcp::socket socket, handler_type& handler)
-        : id_(id)
+    session(boost::asio::ip::tcp::socket socket, handler_type& handler)
+        : id_(value_type::make_key())
         , socket_(std::move(socket))
         , read_buffer_()
         , handler_(handler)
@@ -79,7 +79,7 @@ public:
         pan::net::asio::close(socket_);
     }
 
-    void write(const void* data, std::size_t size)
+    void write(const void* data, size_t size)
     {
         auto self = shared_from_this();
         auto success = [this, self](const void* d, size_t s) { handler_.on_write(self, d, s); };
@@ -106,6 +106,12 @@ private:
         else if (read_buffer_.full()) {
             read_buffer_.lengthen();
         }
+    }
+
+    static key_type make_key()
+    {
+        static key_type id = 0;
+        return ++id;
     }
 
 protected:

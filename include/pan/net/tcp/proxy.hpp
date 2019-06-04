@@ -1,5 +1,5 @@
-#ifndef __PAN_NET_TCP_BASIC_CLUSTER_HPP__
-#define __PAN_NET_TCP_BASIC_CLUSTER_HPP__
+#ifndef __PAN_NET_TCP_PROXY_HPP__
+#define __PAN_NET_TCP_PROXY_HPP__
 
 #include <boost/asio.hpp>
 #include <pan/base.hpp>
@@ -9,78 +9,56 @@
 
 namespace pan { namespace net { namespace tcp {
 
+/* Think about how to match proxy-server(from end-clients) with proxy-client(to real services)
+ * end-clients     could be many
+ * services        could be many also
+ * service-center  basically one, if multiples, one should be master, the others should be slaves.
+ * 
+ * conditions: 
+ * one acceptor, accept connection from clients
+ * many connectors, connect to servcies
+ */
+
 template <typename Handler>
-class basic_cluster : public pan::noncopyable {
-    typedef Handler handler_type;
-
+class proxy : public server<Handler> {
+    typedef server<Handler> _Mybase;
 public:
-    explicit basic_cluster(uint16_t port = 8889)
-        : io_context_()
-        , handler_()
-        , server_(io_context_, port, handler_)
+    typedef connector<handler_type> connector_type;
+    typedef std::shared_ptr<connector_type> connector_ptr;
+
+    explicit proxy(std::uint16_t port = 8888)
+        : _Mybase(port)
     {
-        
+
     }
 
-    virtual ~basic_cluster()
+    virtual ~proxy()
     {
-        for (auto& client : clients_) {
-            client.close();
-        }
-        if (thread_.joinable()) {
-            thread_.join();
-        }
+
     }
 
-    handler_type& handler()
+    void connect(const std::string& host = "localhost", uint16_t port = 8888)
     {
-        return handler_;
+        connector_ = std::make_shared<connector_type>(io_context_, host, std::to_string(port), handler_);
+        auto pred = std::bind(&proxy::new_upstream_session, this, std::placeholders::_1);
+        connector_->register_session_callback(pred);
     }
 
-    const handler_type& handler() const
+protected:
+    void new_upstream_session(session_ptr session)
     {
-        return handler_;
+        session_ = session;
+        // std::string temp("1234567890");
+        // session_->write(temp.data(), temp.size());
     }
 
-    void run()
-    {
-        thread_ = std::thread([this]() { io_context_.run(); });
-    }
+protected:
+    connector_ptr connector_;
+    session_ptr session_;
     
-    void connect(const std::string& host, uint16_t port)
-    {
-        std::string&& key = make_key(host, port);
-        auto client = std::make_shared<client>(io_context_, handler_);
-        if (client && client->connect(host, port)) {
-            clients_[key] = client;
-        }
-    }
-    
-    // shouldn't be here, but inside the handler.
-    bool say(const std::string& host, uint16_t port, const void* data, size_t size)
-    {
-        std::string&& key = make_key(host, port);
-        auto it = clients_.find(key);
-        if (it != clients_.end()) {
-            // TODO: say something(a request, respond, notificaiton, etc.)
-        }
-    }
-    
-    std::string make_key(const std::string& host, uint16_t port = 8889)
-    {
-        return "tcp://" + host + ":" + std::to_string(port);
-    }
-
-private:
-    boost::asio::io_context io_context_;
-    handler_type handler_;
-    server server_;
-    std::map<std::string, std::shared_ptr<client> > clients_;
-    std::thread thread_;
-
 };
 
 }}}
 
 
-#endif // __PAN_NET_TCP_BASIC_CLUSTER_HPP__
+#endif // __PAN_NET_TCP_PROXY_HPP__

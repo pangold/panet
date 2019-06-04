@@ -44,8 +44,7 @@ private:
 
     void accepted(boost::asio::ip::tcp::socket socket)
     {
-        static typename session_type::key_type id = 0;
-        auto session = std::make_shared<session_type>(++id, std::move(socket), handler_);
+        auto session = std::make_shared<session_type>(std::move(socket), handler_);
         session->start();
         if (session_callback_) session_callback_(session);
     }

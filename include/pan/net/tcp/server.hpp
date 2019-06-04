@@ -17,7 +17,7 @@ public:
     typedef typename session_type::pointer session_ptr;
     typedef pan::map<key_type, session_ptr> pool_type;
 
-    explicit server(std::uint16_t port = 8888)
+    explicit server(uint16_t port = 8888)
         : io_context_()
         , handler_()
         , acceptor_(io_context_, port, handler_)

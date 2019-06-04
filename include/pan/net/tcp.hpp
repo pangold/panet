@@ -7,6 +7,7 @@
 #include <pan/net/tcp/connector.hpp>
 #include <pan/net/tcp/server.hpp>
 #include <pan/net/tcp/client.hpp>
+#include <pan/net/tcp/proxy.hpp>
 #include <pan/net/tcp/handler_base.hpp>
 
 #endif // __PAN_NET_TCP_HPP__
