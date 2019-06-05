@@ -23,7 +23,9 @@ public:
         , connector_(io_context_, host, std::to_string(port), handler_)
     {
         auto pred = std::bind(&client::new_session, this, std::placeholders::_1);
-        connector_.register_session_callback(pred);
+        auto close_pred = std::bind(&client::close_session, this, std::placeholders::_1);
+        connector_.register_new_session_callback(pred);
+        connector_.register_close_session_callback(close_pred);
         thread_ = std::thread([this]() { io_context_.run(); });
     }
 
@@ -45,6 +47,13 @@ protected:
         std::lock_guard<std::mutex> lock(mutex_);
         session_ = session;
         cond_.notify_one();
+    }
+
+    void close_session(session_ptr session)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        session_ = nullptr;
+        // TODO: reconnect
     }
 
     void wait_for_session()

@@ -37,6 +37,7 @@ public:
     typedef session<handler_type> value_type;
     typedef std::shared_ptr<value_type> pointer;
     typedef void* content_type;
+    typedef std::function<void(pointer)> close_callback_type;
 
     session(boost::asio::ip::tcp::socket socket, handler_type& handler)
         : id_(value_type::make_key())
@@ -69,14 +70,24 @@ public:
         return reinterpret_cast<T*>(content_);
     }
 
+    void register_close_callback(close_callback_type cb)
+    {
+        close_callback_ = std::move(cb);
+    }
+
     void start()
     {
+        handler_.on_start(shared_from_this());
         read();
     }
 
     void stop()
     {
-        pan::net::asio::close(socket_);
+        auto pred = [this]() {
+            if (close_callback_) close_callback_(shared_from_this());
+            handler_.on_stop(shared_from_this());
+        };
+        pan::net::asio::close(socket_, pred);
     }
 
     void write(const void* data, size_t size)
@@ -87,6 +98,7 @@ public:
         pan::net::asio::write(socket_, data, size, success, failure);
     }
 
+private:
     void read()
     {
         auto self = shared_from_this();
@@ -95,7 +107,6 @@ public:
         pan::net::asio::read(socket_, read_buffer_.free_data(), read_buffer_.free_size(), success, failure);
     }
 
-private:
     void received(const void* data, size_t size)
     {
         read_buffer_.push(size);
@@ -120,6 +131,7 @@ protected:
     buffer_type read_buffer_;
     handler_type& handler_;
     content_type content_;
+    close_callback_type close_callback_;
 
 };
 

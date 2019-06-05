@@ -78,11 +78,13 @@ inline static void write(boost::asio::ip::tcp::socket& socket, const void* data,
     });
 }
 
-inline static void close(boost::asio::ip::tcp::socket& socket)
+template <typename ClosePred>
+inline static void close(boost::asio::ip::tcp::socket& socket, ClosePred pred)
 {
     if (socket.is_open()) {
         socket.shutdown(boost::asio::socket_base::shutdown_both);
         socket.close();
+        pred();
     }
 }
 

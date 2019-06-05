@@ -23,7 +23,9 @@ public:
         , acceptor_(io_context_, port, handler_)
     {
         auto pred = std::bind(&server::new_session, this, std::placeholders::_1);
-        acceptor_.register_session_callback(pred);
+        auto close_pred = std::bind(&server::close_session, this, std::placeholders::_1);
+        acceptor_.register_new_session_callback(pred);
+        acceptor_.register_close_session_callback(close_pred);
     }
 
     virtual ~server() 
@@ -40,6 +42,11 @@ protected:
     void new_session(session_ptr session)
     {
         pool_.insert(session->id(), session);
+    }
+
+    void close_session(session_ptr session)
+    {
+        pool_.remove(session->id());
     }
 
 protected:

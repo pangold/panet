@@ -15,7 +15,8 @@ public:
     typedef Handler handler_type;
     typedef session<handler_type> session_type;
     typedef typename session_type::pointer session_ptr;
-    typedef std::function<void(session_ptr)> session_callback_type;
+    typedef std::function<void(session_ptr)> new_session_callback_type;
+    typedef std::function<void(session_ptr)> close_session_callback_type;
 
     acceptor(boost::asio::io_context& io_context, std::uint16_t port, handler_type& handler)
         : io_context_(io_context)
@@ -30,9 +31,14 @@ public:
         io_context_.post([&]() { acceptor_.close(); });
     }
 
-    void register_session_callback(session_callback_type cb)
+    void register_new_session_callback(new_session_callback_type cb)
     {
-        session_callback_ = std::move(cb);
+        new_session_callback_ = std::move(cb);
+    }
+
+    void register_close_session_callback(close_session_callback_type cb)
+    {
+        close_session_callback_ = std::move(cb);
     }
 
 private:
@@ -46,14 +52,16 @@ private:
     {
         auto session = std::make_shared<session_type>(std::move(socket), handler_);
         session->start();
-        if (session_callback_) session_callback_(session);
+        session->register_close_callback(close_session_callback_);
+        if (new_session_callback_) new_session_callback_(session);
     }
 
 private:
     boost::asio::io_context& io_context_;
     boost::asio::ip::tcp::acceptor acceptor_;
     handler_type& handler_;
-    session_callback_type session_callback_;
+    new_session_callback_type new_session_callback_;
+    close_session_callback_type close_session_callback_;
 
 };
 
