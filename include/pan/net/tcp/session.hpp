@@ -58,7 +58,7 @@ public:
     {
         assert(socket_.is_open());
         auto& ep = socket_.remote_endpoint();
-        return ep.address().to_string() + ":" + std::string(ep.port());
+        return ep.address().to_string() + ":" + std::to_string(ep.port());
     }
 
     std::string ip() const
@@ -98,7 +98,6 @@ public:
     void start()
     {
         LOG_INFO("tcp.session.start: id = %d, ip = %s, port = %d", id(), ip().c_str(), port());
-        handler_.on_start(shared_from_this());
         read();
     }
 
@@ -109,7 +108,6 @@ public:
         socket_.shutdown(boost::asio::socket_base::shutdown_both);
         socket_.close();
         if (close_callback_) close_callback_(shared_from_this());
-        handler_.on_stop(shared_from_this());
     }
 
     void write(const void* data, size_t size)

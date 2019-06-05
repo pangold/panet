@@ -18,12 +18,12 @@ public:
     typedef std::function<void(session_ptr)> new_session_callback_type;
     typedef std::function<void(session_ptr)> close_session_callback_type;
 
-    connector(boost::asio::io_context& ios, const std::string& host, uint16_t port, handler_type& handler)
+    connector(boost::asio::io_context& ios, handler_type& handler)
         : io_context_(ios)
         , resolver_(ios)
         , handler_(handler)
     {
-        connect(host, port);
+
     }
 
     virtual ~connector()

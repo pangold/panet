@@ -22,10 +22,9 @@ public:
         , handler_()
         , acceptor_(io_context_, port, handler_)
     {
-        auto pred = std::bind(&server::new_session, this, std::placeholders::_1);
-        auto close_pred = std::bind(&server::close_session, this, std::placeholders::_1);
-        acceptor_.register_new_session_callback(pred);
-        acceptor_.register_close_session_callback(close_pred);
+        using namespace std::placeholders;
+        acceptor_.register_new_session_callback(std::bind(&server::new_session, this, _1));
+        acceptor_.register_close_session_callback(std::bind(&server::close_session, this, _1));
     }
 
     virtual ~server() 

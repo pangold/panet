@@ -20,19 +20,23 @@ public:
     explicit client(const std::string& host = "localhost", uint16_t port = 8888)
         : io_context_()
         , handler_()
-        , connector_(io_context_, host, port, handler_)
+        , connector_(io_context_, handler_)
     {
-        auto pred = std::bind(&client::new_session, this, std::placeholders::_1);
-        auto close_pred = std::bind(&client::close_session, this, std::placeholders::_1);
-        connector_.register_new_session_callback(pred);
-        connector_.register_close_session_callback(close_pred);
-        thread_ = std::thread([this]() { io_context_.run(); });
+        using namespace std::placeholders;
+        connector_.register_new_session_callback(std::bind(&client::new_session, this, _1));
+        connector_.register_close_session_callback(std::bind(&client::close_session, this, _1));
+        connector_.connect(host, port);
     }
 
     virtual ~client()
     {
         stop();
         thread_.join();
+    }
+
+    void run()
+    {
+        thread_ = std::thread([this]() { io_context_.run(); });
     }
 
     void stop()
