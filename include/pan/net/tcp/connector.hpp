@@ -18,7 +18,7 @@ public:
     typedef std::function<void(session_ptr)> new_session_callback_type;
     typedef std::function<void(session_ptr)> close_session_callback_type;
 
-    connector(boost::asio::io_context& ios, const std::string& host, const std::string& port, handler_type& handler) 
+    connector(boost::asio::io_context& ios, const std::string& host, uint16_t port, handler_type& handler)
         : io_context_(ios)
         , resolver_(ios)
         , handler_(handler)
@@ -41,13 +41,14 @@ public:
         close_session_callback_ = std::move(cb);
     }
 
-private:
-    void connect(const std::string& host, const std::string& port)
+    void connect(const std::string& host, uint16_t port)
     {
+        LOG_INFO("connector.resolve: host = %s, port = %d", host.c_str(), port);
         auto pred = std::bind(&connector::resolved, this, std::placeholders::_1);
-        pan::net::asio::resolve(resolver_, host, port, pred);
+        pan::net::asio::resolve(resolver_, host, std::to_string(port), pred);
     }
 
+private:
     void resolved(const boost::asio::ip::tcp::resolver::results_type& endpoints)
     {
         auto pred = std::bind(&connector::connected, this, std::placeholders::_1);
@@ -58,6 +59,7 @@ private:
     {
         auto session = std::make_shared<session_type>(std::move(socket), handler_);
         session->start();
+        LOG_INFO("connector.connected: session ip = %s, port = %d", session->ip().c_str(), session->port());
         session->register_close_callback(close_session_callback_);
         if (new_session_callback_) new_session_callback_(session);
     }

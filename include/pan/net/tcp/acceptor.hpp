@@ -52,6 +52,7 @@ private:
     {
         auto session = std::make_shared<session_type>(std::move(socket), handler_);
         session->start();
+        LOG_INFO("acceptor.accepted: session ip = %s, port = %d", session->ip().c_str(), session->port());
         session->register_close_callback(close_session_callback_);
         if (new_session_callback_) new_session_callback_(session);
     }

@@ -52,6 +52,26 @@ public:
     {
         stop();
     }
+    
+    // format: "ip:port"
+    std::string to_string() const
+    {
+        assert(socket_.is_open());
+        auto& ep = socket_.remote_endpoint();
+        return ep.address().to_string() + ":" + std::string(ep.port());
+    }
+
+    std::string ip() const
+    {
+        assert(socket_.is_open());
+        return socket_.remote_endpoint().address().to_string();
+    }
+
+    uint16_t port() const
+    {
+        assert(socket_.is_open());
+        return socket_.remote_endpoint().port();
+    }
 
     key_type id() const 
     {
@@ -77,17 +97,19 @@ public:
 
     void start()
     {
+        LOG_INFO("tcp.session.start: id = %d, ip = %s, port = %d", id(), ip().c_str(), port());
         handler_.on_start(shared_from_this());
         read();
     }
 
     void stop()
     {
-        auto pred = [this]() {
-            if (close_callback_) close_callback_(shared_from_this());
-            handler_.on_stop(shared_from_this());
-        };
-        pan::net::asio::close(socket_, pred);
+        if (!socket_.is_open()) return;
+        LOG_INFO("tcp.session.stop: id = %d, ip = %s, port = %d", id(), ip().c_str(), port());
+        socket_.shutdown(boost::asio::socket_base::shutdown_both);
+        socket_.close();
+        if (close_callback_) close_callback_(shared_from_this());
+        handler_.on_stop(shared_from_this());
     }
 
     void write(const void* data, size_t size)

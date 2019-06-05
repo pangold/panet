@@ -20,7 +20,7 @@ public:
     explicit client(const std::string& host = "localhost", uint16_t port = 8888)
         : io_context_()
         , handler_()
-        , connector_(io_context_, host, std::to_string(port), handler_)
+        , connector_(io_context_, host, port, handler_)
     {
         auto pred = std::bind(&client::new_session, this, std::placeholders::_1);
         auto close_pred = std::bind(&client::close_session, this, std::placeholders::_1);
@@ -31,8 +31,18 @@ public:
 
     virtual ~client()
     {
-        if (session_) session_->stop();
+        stop();
         thread_.join();
+    }
+
+    void stop()
+    {
+        if (!session_) return;
+        // must manually stop, 
+        // because read() of session keeps one ref_counter, 
+        // and use_count will never be 0 
+        session_->stop(); 
+        session_.reset(); 
     }
 
     void write(const std::string& data)
@@ -45,14 +55,16 @@ protected:
     void new_session(session_ptr session)
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        // here client only manages one session, 
+        // so stop previous session.
+        stop(); 
         session_ = session;
         cond_.notify_one();
     }
 
     void close_session(session_ptr session)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        session_ = nullptr;
+        stop();
         // TODO: reconnect
     }
 
