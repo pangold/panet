@@ -5,22 +5,26 @@
 
 namespace pan { namespace net { namespace tcp {
 
-template <typename Inherit, typename Target>
-class proxy_handler_base : public pan::net::tcp::handler_base<Inherit> {
-    template <typename T1, typename T2> friend class proxy_handler_base;
-
+template <typename Inherit, 
+    typename Target>
+class proxy_handler_base : public handler_base<Inherit> {
+    template <typename T1, typename T2> 
+    friend class proxy_handler_base;
 public:
     typedef std::function<void(const std::string&, uint16_t)> connect_op_type;
 
+    // nothing ...
     proxy_handler_base() 
         : associated_handler_(nullptr) 
     { }
 
+    // connector's connect(ip, port)
     void set_connection_op(connect_op_type op)
     {
         upstream_connect_op_ = std::move(op);
     }
 
+    // associate Inherit and Target.s
     void set_associated_handler(proxy_handler_base<Target, Inherit>* association)
     {
         associated_handler_ = association;
@@ -29,23 +33,7 @@ public:
         }
     }
 
-    void on_session_start(session_ptr session)
-    {
-        // FIXME: think about multi-thread access.
-        pool_[session->to_string()] = session;
-    }
-
-    void on_session_stop(session_ptr session)
-    {
-        // FIXME: think about multi-thread access.
-        pool_.erase(session->to_string());
-    }
-
-    std::map<std::string, session_ptr>& pool() 
-    { 
-        return pool_; 
-    }
-
+    // an extension that use to load info (of upstream handler).
     virtual void run() { }
 
 protected:
@@ -57,7 +45,6 @@ protected:
 protected:
     connect_op_type upstream_connect_op_;
     proxy_handler_base<Target, Inherit>* associated_handler_;
-    std::map<std::string, session_ptr> pool_;
 
 };
 
