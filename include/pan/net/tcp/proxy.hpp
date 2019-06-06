@@ -7,95 +7,54 @@
 
 namespace pan { namespace net { namespace tcp {
 
-/* Think about how to match proxy-server(from end-clients) with proxy-client(to real services)
- * end-clients     could be many
- * services        could be many also
- * service-center  basically one, if multiples, one should be master, the others should be slaves.
- * 
- * conditions: 
- * one acceptor, accept connection from clients
- * many connectors, connect to servcies
+/* Basic Handler's member function required(see the handler_base<>): 
+ * ------------------------------------------------------------------
+ * void on_session_start(session_ptr);
+ * void on_session_stop(session_ptr);
+ * void on_write(session_ptr, const void*, std::size_t);
+ * std::size_t on_message(session_ptr, const void*, std::size_t);
+ * ------------------------------------------------------------------
+ * You can directly inherit handler_base<Inherit>, 
+ * Or, define the same named member functions.
+ * ==================================================================
+ * ProxyHandler's member function required(see the proxy_handler_base<>): 
+ * ------------------------------------------------------------------
+ * void set_associated_handler(proxy_handler_base<Target, Inherit>* association);
+ * void set_connection_op(connect_op_type op);
+ * void run();
+ * ------------------------------------------------------------------
+ * You can directly inherit proxy_handler_base<Inherit, Target>, 
+ * Or, define the same named member functions.
+ * ==================================================================
  */
-
-template <typename Handler>
-class proxy : public pan::noncopyable {
+template <typename UpstreamHandler, 
+    typename DownstreamHandler>
+class proxy : public server<DownstreamHandler> {
+    typedef server<DownstreamHandler> _Mybase;
 public:
-    typedef Handler handler_type;
-    typedef acceptor<handler_type> acceptor_type;
-    typedef connector<handler_type> connector_type;
-    typedef session<handler_type> session_type;
-    typedef typename session_type::key_type key_type;
-    typedef typename session_type::pointer session_ptr;
-    // downstream connections, basically are end-clients
-    typedef pan::map<key_type, session_ptr> downstream_pool_type;
-    // upstream connections, basically are service providers/dependent services.
-    typedef pan::map<std::string, session_ptr> upstream_pool_type;
+    typedef UpstreamHandler upstream_handler_type;
+    typedef connector<upstream_handler_type> connector_type;
 
-    explicit proxy(std::uint16_t port = 8888)
-        : io_context_()
-        , handler_()
-        , acceptor_(io_context_, port, handler_)
-        , connector_(io_context_, handler_)
+    explicit proxy(std::uint16_t port)
+        : _Mybase(port, false)
+        , upstream_handler_()
+        , connector_(io_context_, upstream_handler_)
     {
         using namespace std::placeholders;
-        connector_.register_new_session_callback(std::bind(&proxy::new_upstream_session, this, _1));
-        connector_.register_close_session_callback(std::bind(&proxy::close_upstream_session, this, _1));
-        acceptor_.register_new_session_callback(std::bind(&proxy::new_downstream_session, this, _1));
-        acceptor_.register_close_session_callback(std::bind(&proxy::close_downstream_session, this, _1));
-    }
-
-    virtual ~proxy()
-    {
-        stop();
-    }
-
-    // connect to upstream services outside
-    void connect(const std::string& host, uint16_t port)
-    {
-        connector_.connect(host, port);
+        auto pred = std::bind(&connector_type::connect, &connector_, _1, _2);
+        upstream_handler_.set_associated_handler(&handler_);
+        upstream_handler_.set_connection_op(pred);
     }
 
     void run()
     {
-        thread_ = std::thread([this]() { io_context_.run(); });
-    }
-
-    void stop()
-    {
-        thread_.join();
+        upstream_handler_.run();
+        _Mybase::run();
     }
 
 protected:
-    void new_upstream_session(session_ptr session)
-    {
-        LOG_INFO("tcp.proxy.new.upstream.session");
-        upstream_pool_.insert(session->to_string(), session);
-    }
-
-    void new_downstream_session(session_ptr session)
-    {
-        LOG_INFO("tcp.proxy.new.downstream.session");
-        downstream_pool_.insert(session->id(), session);
-    }
-
-    void close_upstream_session(session_ptr session)
-    {
-        upstream_pool_.remove(session->to_string());
-    }
-
-    void close_downstream_session(session_ptr session)
-    {
-        downstream_pool_.remove(session->id());
-    }
-
-protected:
-    boost::asio::io_context io_context_;
-    handler_type handler_;
-    acceptor_type acceptor_;
+    upstream_handler_type upstream_handler_;
     connector_type connector_;
-    downstream_pool_type downstream_pool_;
-    upstream_pool_type upstream_pool_;
-    std::thread thread_;
     
 };
 

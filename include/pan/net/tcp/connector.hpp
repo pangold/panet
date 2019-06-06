@@ -43,7 +43,7 @@ public:
 
     void connect(const std::string& host, uint16_t port)
     {
-        LOG_INFO("connector.resolve: host = %s, port = %d", host.c_str(), port);
+        LOG_INFO("connector.connect: tcp://%s:%d", host.c_str(), port);
         auto pred = std::bind(&connector::resolved, this, std::placeholders::_1);
         pan::net::asio::resolve(resolver_, host, std::to_string(port), pred);
     }
@@ -58,10 +58,9 @@ private:
     void connected(boost::asio::ip::tcp::socket socket)
     {
         auto session = std::make_shared<session_type>(std::move(socket), handler_);
-        session->start();
-        LOG_INFO("connector.connected: session ip = %s, port = %d", session->ip().c_str(), session->port());
+        session->register_start_callback(new_session_callback_);
         session->register_close_callback(close_session_callback_);
-        if (new_session_callback_) new_session_callback_(session);
+        session->start();
     }
 
 private:

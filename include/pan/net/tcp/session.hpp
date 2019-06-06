@@ -37,6 +37,7 @@ public:
     typedef session<handler_type> value_type;
     typedef std::shared_ptr<value_type> pointer;
     typedef void* content_type;
+    typedef std::function<void(pointer)> start_callback_type;
     typedef std::function<void(pointer)> close_callback_type;
 
     session(boost::asio::ip::tcp::socket socket, handler_type& handler)
@@ -90,6 +91,11 @@ public:
         return reinterpret_cast<T*>(content_);
     }
 
+    void register_start_callback(start_callback_type cb)
+    {
+        start_callback_ = std::move(cb);
+    }
+
     void register_close_callback(close_callback_type cb)
     {
         close_callback_ = std::move(cb);
@@ -97,17 +103,24 @@ public:
 
     void start()
     {
-        LOG_INFO("tcp.session.start: id = %d, ip = %s, port = %d", id(), ip().c_str(), port());
+        LOG_INFO("tcp.session.start: id<%d>:%s", id(), to_string().c_str());
+        // Here are two options to callback session started state.
+        if (start_callback_) start_callback_(shared_from_this());
+        handler_.on_session_start(shared_from_this());
         read();
     }
 
     void stop()
     {
         if (!socket_.is_open()) return;
-        LOG_INFO("tcp.session.stop: id = %d, ip = %s, port = %d", id(), ip().c_str(), port());
+        LOG_INFO("tcp.session.stop: id<%d>:%s", id(), to_string().c_str());
+        // Here are two options to callback session closed state.
+        // Note!!!! No session->stop() invokement within callback. 
+        // Or it will cause dead loop, and then crash...
+        if (close_callback_) close_callback_(shared_from_this());
+        handler_.on_session_stop(shared_from_this());
         socket_.shutdown(boost::asio::socket_base::shutdown_both);
         socket_.close();
-        if (close_callback_) close_callback_(shared_from_this());
     }
 
     void write(const void* data, size_t size)
@@ -151,6 +164,7 @@ protected:
     buffer_type read_buffer_;
     handler_type& handler_;
     content_type content_;
+    start_callback_type start_callback_;
     close_callback_type close_callback_;
 
 };

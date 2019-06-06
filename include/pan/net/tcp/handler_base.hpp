@@ -16,13 +16,14 @@ public:
 
     virtual ~handler_base() { }
     // to manage connections
-    virtual void on_start(session_ptr) { }
+    virtual void on_session_start(session_ptr) { }
     // to manage connections
-    virtual void on_stop(session_ptr) { }
+    virtual void on_session_stop(session_ptr) { }
     // for data statistics
     virtual void on_write(session_ptr, const void*, std::size_t) { }
     // for data statistics and real business logic processing
     virtual std::size_t on_message(session_ptr, const void*, std::size_t) = 0;
+
 };
 
 }}}
