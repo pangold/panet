@@ -3,8 +3,7 @@
 
 #include <memory>
 #include <pan/base.hpp>
-#include <pan/net/protocol/datagram.hpp>
-#include <pan/net/protocol/utils.hpp>
+#include <pan/net/protocol.hpp>
 #include <pan/net/protobuf/dispatcher.hpp>
 #include <pan/net/protobuf/helper.hpp>
 
@@ -12,10 +11,9 @@ namespace pan { namespace net { namespace protobuf {
 
 template <typename Session>
 class codec {
-    using session_type = Session;
-    using session_ptr = typename session_type::pointer;
-    using dispatcher_type = dispatcher<session_type>;
-
+    typedef Session session_type;
+    typedef typename session_type::pointer session_ptr;
+    typedef dispatcher<session_type> dispatcher_type;
 public:
     template <typename T>
     void register_callback(std::function<void(session_ptr, std::shared_ptr<T>)> cb)
@@ -23,26 +21,34 @@ public:
         dispatcher_.register_callback(cb);
     }
 
-    void send(session_ptr session, message_ptr message)
+    bool send(session_ptr session, message_ptr message)
     {
-        ostream os;
-        os << *serialize_from_message(message);
-        if (session) {
-            session->write(os.data(), os.size());
+        std::string str;
+        if (serialize(str, message)) {
+            session->write(str.data(), str.size());
+            return true;
         }
+        return false;
     }
 
-    int on_message(session_ptr session, const void* data, std::size_t size)
+    bool on_message(session_ptr session, const protocol::datagram& datagram)
     {
-        istream is(data, size);
-        auto d = std::make_shared<datagram>();
-        auto len = parse_to_datagram(is, d);
-        if (len <= 0) return len;
-        if (auto message = parse_to_message(d)) {
+        message_ptr message;
+        if (datagram_to_message(datagram, message)) {
             dispatcher_.on_message(session, message);
-            return len;
+            return true;
         }
-        return static_cast<int>(size);
+        return false;
+    }
+
+    bool on_message(session_ptr session, const void* data, size_t size)
+    {
+        message_ptr message;
+        if (parse(message, data, size) > 0) {
+            dispatcher_.on_message(session, message);
+            return true;
+        }
+        return false;
     }
 
 private:

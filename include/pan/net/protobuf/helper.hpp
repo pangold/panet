@@ -2,12 +2,12 @@
 #define __PAN_NET_PROTOBUF_HELPER_HPP__
 
 #include <google/protobuf/message.h>
-#include <pan/net/protocol/datagram.hpp>
-#include <pan/net/protocol/utils.hpp>
+#include <pan/net/protocol.hpp>
 
 namespace pan { namespace net { namespace protobuf {
 
 typedef google::protobuf::Message message_type;
+typedef google::protobuf::Descriptor descriptor_type;
 typedef google::protobuf::DescriptorPool descriptor_pool;
 typedef google::protobuf::MessageFactory message_factory;
 typedef std::shared_ptr<message_type> message_ptr;
