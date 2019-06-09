@@ -1,14 +1,12 @@
-#ifndef __PAN_NET_PROTOBUF_PROXY_HPP__
-#define __PAN_NET_PROTOBUF_PROXY_HPP__
+#ifndef __PAN_NET_PROTOBUF_DISPATCHER_HPP__
+#define __PAN_NET_PROTOBUF_DISPATCHER_HPP__
 
 #include <memory>
 #include <map>
 #include <functional>
 #include <google/protobuf/message.h>
 
-
 namespace pan { namespace net { namespace protobuf {
-
 
 template <typename Session>
 class callback_base {
@@ -17,7 +15,6 @@ public:
     virtual ~callback_base() { }
     virtual void on_message(session_ptr, message_ptr) = 0;
 };
-
 
 template <typename T, typename Session>
 class callback : public callback_base<Session> {
@@ -39,9 +36,8 @@ private:
 
 };
 
-
 template <typename Session>
-class proxy {
+class dispatcher {
     using session_ptr = typename Session::pointer;
     using callback_ptr = std::shared_ptr<callback_base<Session> >;
 
@@ -68,7 +64,6 @@ private:
 
 };
 
-
 }}}
 
-#endif // __PAN_NET_PROTOBUF_PROXY_HPP__
+#endif // __PAN_NET_PROTOBUF_DISPATCHER_HPP__

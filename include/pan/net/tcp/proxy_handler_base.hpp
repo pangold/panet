@@ -2,6 +2,7 @@
 #define __PAN_NET_TCP_PROXY_HANDLER_BASE_HPP__
 
 #include <pan/net/tcp/handler_base.hpp>
+#include <pan/net/protocol/utils.hpp>
 
 namespace pan { namespace net { namespace tcp {
 
@@ -32,6 +33,31 @@ public:
             association->associated_handler_ = this;
         }
     }
+
+    // parse each report(datagram)
+    std::size_t on_message(session_ptr session, const void* data, std::size_t size)
+    {
+        std::shared_ptr<protobuf::datagram> datagram;
+        int len = protobuf::data_to_datagram(*datagram, data, size);
+        if (len == -1) session->stop();
+        if (len > 0) on_datagram(session, datagram);
+        return len < 1 ? 0 : len;
+    }
+
+    // three different ways to dispatch
+    // 1. downstream: do something as below, 
+    //    a. store old datagram::id(original id from client, need to set it back when reply)
+    //    b. change datagram::id to current time(unique for this process)
+    //    c. store session(which client this datagram comes from)
+    //    d. store datagram(for extension)
+    //    then, use new_id as key, store above info into a map(confirm_queue_).
+    // 2. upstream: do something as below, 
+    //    a. get info from confirm_queue_ by id(new_id)
+    //    b. change this datagram::id to old_id
+    //    c. reply throught confirm_queue[id]::session::write(not param 1)
+    //    d. remove confirm_queue[id](or extension like store this message)
+    // 3. local: process this request.
+    virtual void on_datagram(session_ptr, std::shared_ptr<protocol::datagram>) = 0;
 
     // an extension that use to load info (of upstream handler).
     virtual void run() { }

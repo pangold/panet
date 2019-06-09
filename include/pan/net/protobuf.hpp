@@ -3,5 +3,6 @@
 
 #include <pan/net/protobuf/codec.hpp>
 #include <pan/net/protobuf/utils.hpp>
+#include <pan/net/protobuf/handler.hpp>
 
 #endif // __PAN_NET_PROTOBUF_HPP__

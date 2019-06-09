@@ -14,6 +14,7 @@ namespace pan { namespace net { namespace tcp {
  */
 template <typename Handler>
 class client : public pan::noncopyable {
+    friend typename Handler;
 public:
     typedef Handler handler_type;
     typedef connector<handler_type> connector_type;
@@ -47,6 +48,12 @@ public:
         // and use_count will never be 0 
         session_->stop(); 
         session_.reset(); 
+    }
+
+    void write(const void* data, size_t size)
+    {
+        wait_for_session();
+        session_->write(data, size);
     }
 
     void write(const std::string& data)
