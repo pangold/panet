@@ -1,5 +1,5 @@
-#ifndef __PAN_NET_PROTOCOL_HANDLER_BASE_HPP__
-#define __PAN_NET_PROTOCOL_HANDLER_BASE_HPP__
+#ifndef __PAN_NET_PROTOCOL_DATAGRAM_HANDLER_BASE_HPP__
+#define __PAN_NET_PROTOCOL_DATAGRAM_HANDLER_BASE_HPP__
 
 #include <pan/net/protocol/datagram.hpp>
 #include <pan/net/protocol/utils.hpp>
@@ -8,7 +8,7 @@
 namespace pan { namespace net { namespace protocol {
 
 template <typename Inherit>
-class handler_base : public tcp::handler_base<Inherit> {
+class datagram_handler_base : public tcp::handler_base<Inherit> {
 public:
     typedef std::shared_ptr<protocol::datagram> datagram_ptr;
 
@@ -20,7 +20,7 @@ public:
             const char* begin = (const char*)data + process_size;
             int remaining_size = size - process_size;
             // not enough space for a datagram, even though datagram::length
-            if (remaining_size < 4) break; 
+            if (remaining_size < 4) break;
             auto datagram = std::make_shared<protocol::datagram>();
             int len = protocol::data_to_datagram(*datagram, begin, remaining_size);
             if (len == -1) session->stop();
@@ -38,4 +38,4 @@ public:
 
 }}}
 
-#endif // __PAN_NET_PROTOCOL_HANDLER_BASE_HPP__
+#endif // __PAN_NET_PROTOCOL_DATAGRAM_HANDLER_BASE_HPP__

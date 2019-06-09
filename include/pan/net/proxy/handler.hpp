@@ -3,7 +3,7 @@
 
 #include <map>
 #include <tuple>
-#include <pan/net/protocol/handler_base.hpp>
+#include <pan/net/protocol/datagram_handler_base.hpp>
 #include <pan/net/proxy/upstream.hpp>
 #include <pan/net/tcp/clients.hpp>
 
@@ -12,7 +12,7 @@ namespace pan { namespace net { namespace proxy {
 /* 
  * A downstream handler for end-client.
  */
-class handler : public protocol::handler_base<handler> {
+class handler : public protocol::datagram_handler_base<handler> {
     typedef std::string service_name_type; // service name
     typedef std::string connect_info_type; // ip, port
     // typedef std::multimap<service_name_type, connect_info_type> service_list;
