@@ -3,37 +3,20 @@
 
 #include <string>
 #include <iostream>
-#include <pan/net/handler_base.hpp>
+#include <pan/base.hpp>
+#include <pan/net/tcp.hpp>
+#include <pan/net/tcp/handler_base.hpp>
 
 namespace pan { namespace net { namespace echo {
 
-template <typename Session>
-class client_handler
-    : public pan::net::handler_base<Session> {
+class client_handler : public tcp::handler_base<client_handler> {
 public:
-    template <typename Message>
-    void write(const Message& message)
+    std::size_t on_message(session_ptr, const void* data, std::size_t size)
     {
-        if (session_) {
-            session_->write(message.data(), message.size());
-        }
-    }
-
-protected:
-    void on_start(session_ptr session) 
-    {
-        session_ = session;
-    }
-
-    std::size_t on_message(session_ptr /*session*/, const void* buffer, std::size_t size)
-    {
-        std::cout << std::string((char*)buffer, (char*)buffer + size) << std::endl;
+        std::string msg((char*)data, (char*)data + size);
+        LOG_INFO("echo client: recevied: %s", msg.c_str());
         return size;
     }
-
-private:
-    session_ptr session_;
-
 };
 
 }}}
