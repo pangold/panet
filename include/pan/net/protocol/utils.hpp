@@ -12,7 +12,7 @@ inline static int data_to_datagram(datagram& datagram, const void* data, size_t 
         return 0;
     }
     if (!datagram.valid()) {
-        LOG_ERROR("protobuf.parse: invalid checksum");
+        LOG_ERROR("protocol.datagram.parse: invalid checksum");
         return -1;
     }
     return datagram.size();
@@ -21,7 +21,7 @@ inline static int data_to_datagram(datagram& datagram, const void* data, size_t 
 inline static bool datagram_to_data(std::string& str, const datagram& datagram)
 {
     if (!datagram.to(str)) {
-        LOG_ERROR("protobuf.serialize: serialize %s error", datagram.name().c_str());
+        LOG_ERROR("protocol.datagram.serialize: serialize %s error", datagram.name().c_str());
         return false;
     }
     return true;

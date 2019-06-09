@@ -4,7 +4,7 @@
 #include <map>
 #include <tuple>
 #include <pan/net/protocol/handler_base.hpp>
-#include <pan/net/proxy/upstream_handler.hpp>
+#include <pan/net/proxy/upstream.hpp>
 #include <pan/net/tcp/clients.hpp>
 
 namespace pan { namespace net { namespace proxy {
@@ -39,7 +39,13 @@ public:
     }
 
 private:
-    // message from end-client
+    // As downstream handler callback: do something as below, 
+    // a. store old datagram::id(original id from client, need to set it back when reply)
+    // b. change datagram::id to current time(unique for this process)
+    // c. store session(which client this datagram comes from)
+    // d. store datagram(for extension)
+    //    use new_id as key, above info store into a confirm_queue(map).
+    // e. use datagram::name() to get target(ip:port), and write
     void on_datagram(session_ptr session, datagram_ptr datagram)
     {
         auto old_id = datagram->id();
@@ -53,12 +59,15 @@ private:
         }
     }
 
-    // message from upstream services
-    void on_upstream(upstream_handler::session_ptr session, upstream_handler::datagram_ptr datagram)
+    // As upstream handler callback: do something as below, 
+    // a. get info from confirm_queue_ by id(new_id)
+    // b. change this datagram::id to old_id
+    // c. reply throught confirm_queue[id]::session::write(not param 1)
+    // d. remove confirm_queue[id](or extension like store this message)
+    void on_upstream(upstream::session_ptr session, upstream::datagram_ptr datagram)
     {
         // TODO: process messages that reply from service center.
 
-        // 
         auto it = confirm_queue_.find(datagram->id());
         if (it != confirm_queue_.end()) {
             // recover old id
@@ -71,7 +80,7 @@ private:
     }
 
 private:
-    tcp::clients<upstream_handler> upstream_;
+    tcp::clients<upstream> upstream_;
     service_list services_;
     confirm_queue confirm_queue_;
 

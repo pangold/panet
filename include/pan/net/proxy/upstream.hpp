@@ -1,12 +1,12 @@
-#ifndef __PAN_NET_PROXY_HANDLER_BASE_HPP__
-#define __PAN_NET_PROXY_HANDLER_BASE_HPP__
+#ifndef __PAN_NET_PROXY_UPSTREAM_HPP__
+#define __PAN_NET_PROXY_UPSTREAM_HPP__
 
 #include <functional>
 #include <pan/net/protocol/handler_base.hpp>
 
 namespace pan { namespace net { namespace proxy {
 
-class upstream_handler : public protocol::handler_base<upstream_handler> {
+class upstream : public protocol::handler_base<upstream> {
 public:
     typedef std::function<void(session_ptr, datagram_ptr)> message_callback_type;
     void register_message_callback(message_callback_type cb)
@@ -25,4 +25,4 @@ private:
 
 }}}
 
-#endif // __PAN_NET_PROXY_HANDLER_BASE_HPP__
+#endif // __PAN_NET_PROXY_UPSTREAM_HPP__
