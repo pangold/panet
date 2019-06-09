@@ -2,7 +2,7 @@
 #define __PAN_NET_PROXY_UPSTREAM_HPP__
 
 #include <functional>
-#include <pan/net/protocol/datagram_handler_base.hpp>
+#include <pan/net/protocol.hpp>
 
 namespace pan { namespace net { namespace proxy {
 

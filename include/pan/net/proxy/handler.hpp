@@ -3,8 +3,8 @@
 
 #include <map>
 #include <tuple>
-#include <pan/net/protocol/datagram_handler_base.hpp>
 #include <pan/net/proxy/upstream.hpp>
+#include <pan/net/protocol.hpp>
 #include <pan/net/tcp/clients.hpp>
 
 namespace pan { namespace net { namespace proxy {
