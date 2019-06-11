@@ -2,11 +2,23 @@
 #define __PAN_NET_RPC_SERVER_HPP__
 
 #include <pan/net/tcp.hpp>
-#include <pan/net/rpc/server_handler.hpp>
+#include <pan/net/rpc/handler.hpp>
 
 namespace pan { namespace net { namespace rpc {
 
-using server = tcp::basic_server<rpc::server_handler<tcp::session> >;
+class server : public tcp::server<rpc::handler> {
+public:
+    server(uint16_t port)
+        : tcp::server<handler>(port)
+    {
+
+    }
+    template <typename F, typename... Args>
+    void bind(const std::string& name, F func, Args... args)
+    {
+        handler_.bind(name, func, std::forward<Args>(args)...);
+    }
+};
 
 }}}
 

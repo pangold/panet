@@ -1,51 +1,78 @@
 #ifndef __PAN_NET_TCP_SERVER_HPP__
 #define __PAN_NET_TCP_SERVER_HPP__
 
-#include <memory>
-#include <cstdint>
 #include <boost/asio.hpp>
 #include <pan/base.hpp>
 #include <pan/net/tcp/session.hpp>
 
 namespace pan { namespace net { namespace tcp {
 
-class server : public noncopyable {
+/*
+ * Don't really need to manage sessions here, 
+ * In most situation, handler needs to interact with session_pool, 
+ * 
+ * In old implementation, we need to pass each sessions into hander.
+ * Then, we need to manage two associated session pools at the same time.
+ * And have to do a bit more steps to synchronize two connection pools. 
+ * That implementation was ugly.
+ * 
+ * So far, any session pool here or in handler is just an option.
+ * Two session pool here and in handler are totaly individual.
+ * And be synchronized by session's interal member function start/stop().
+ */
+template <typename Handler>
+class server : public pan::noncopyable {
 public:
-    using handler_type = session::handler_type;
+    typedef Handler handler_type;
+    typedef acceptor<handler_type> acceptor_type;
+    typedef session<handler_type> session_type;
+    typedef typename session_type::key_type key_type;
+    typedef typename session_type::pointer session_ptr;
+    typedef pan::map<key_type, session_ptr> pool_type;
 
-    server(boost::asio::io_context& io_context, std::uint16_t port, handler_type& handler)
-        : io_context_(io_context)
-        , acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
-        , handler_(handler)
+    explicit server(uint16_t port, bool use_thread = false)
+        : io_context_()
+        , handler_()
+        , acceptor_(io_context_, port, handler_)
+        , use_thread_(use_thread)
     {
-        accept();
+        using namespace std::placeholders;
+        acceptor_.register_new_session_callback(std::bind(&server::new_session, this, _1));
+        acceptor_.register_close_session_callback(std::bind(&server::close_session, this, _1));
     }
 
-    virtual ~server()
+    virtual ~server() 
     {
-        io_context_.post([this]() { acceptor_.close(); });
+        if (use_thread_ && thread_.joinable()) thread_.join();
+        pool_.clear();
+    }
+
+    void run() 
+    { 
+        if (!use_thread_) io_context_.run();
+        else thread_ = std::thread([this]() { io_context_.run(); });
     }
 
 protected:
-    void accept()
+    void new_session(session_ptr session)
     {
-        acceptor_.async_accept(
-            [this](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
-            if (!ec) {
-                static session::key_type id = 0;
-                std::make_shared<session>(0, std::move(socket), handler_)->start();
-            } else {
-                LOG_ERROR("tcp.server.accept.error: %s", ec.message().c_str());
-            }
-            accept();
-        });
+        pool_.insert(session->id(), session);
+    }
+
+    void close_session(session_ptr session)
+    {
+        pool_.remove(session->id());
     }
 
 protected:
-    boost::asio::io_context& io_context_;
-    boost::asio::ip::tcp::acceptor acceptor_;
-    handler_type& handler_;
-
+    boost::asio::io_context io_context_;
+    handler_type handler_;
+    acceptor_type acceptor_;
+    // FIXME: pool needs to be optimized.
+    pool_type pool_;
+    std::thread thread_;
+    bool use_thread_;
+    
 };
 
 }}}

@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package Pango.Rpc;
+
+message Request {
+    required string name = 1;
+    required int32 id = 2;
+    optional bytes params = 3;
+}
+
+message Respond {
+    required string name = 1;
+    required int32 id = 2;
+    
+    enum status_code {
+        SUCCESS = 0;
+        FAILURE = 1;
+        NOT_FOUND = 2;
+    }
+    
+    required status_code code = 3 [default = SUCCESS];
+    optional bytes value = 4;
+}

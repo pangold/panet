@@ -1,6 +1,7 @@
 #ifndef __PAN_BASE_HPP__
 #define __PAN_BASE_HPP__
 
+#include <pan/base/buffer.hpp>
 #include <pan/base/crc32.hpp>
 #include <pan/base/endianness.hpp>
 #include <pan/base/log.hpp>

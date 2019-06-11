@@ -2,11 +2,14 @@
 #define __PAN_NET_ECHO_CLIENT_HPP__
 
 #include <pan/net/tcp.hpp>
+#include <pan/net/echo/server_handler.hpp>
 #include <pan/net/echo/client_handler.hpp>
+#include <pan/net/echo/datagram_client.hpp>
 
 namespace pan { namespace net { namespace echo {
 
-using client = tcp::basic_client<echo::client_handler<tcp::session> >;
+typedef tcp::server<server_handler> server;
+typedef tcp::client<client_handler> client;
 
 }}}
 

@@ -1,66 +1,102 @@
 #ifndef __PAN_NET_TCP_CLIENT_HPP__
 #define __PAN_NET_TCP_CLIENT_HPP__
 
-#include <string>
-#include <memory>
 #include <boost/asio.hpp>
 #include <pan/base.hpp>
 #include <pan/net/tcp/session.hpp>
 
 namespace pan { namespace net { namespace tcp {
-
-class client : public noncopyable {
+    
+/*
+ * A connection blocking client that only hold one session.
+ * Multiple sessions won't be supported.
+ * Mainly design as a end-client.
+ */
+template <typename Handler>
+class client : public pan::noncopyable {
+    friend typename Handler;
 public:
-    using session_ptr = session::pointer;
-    using handler_type = session::handler_type;
+    typedef Handler handler_type;
+    typedef connector<handler_type> connector_type;
+    typedef session<handler_type> session_type;
+    typedef typename session_type::key_type key_type;
+    typedef typename session_type::pointer session_ptr;
 
-    client(boost::asio::io_context& io_context, handler_type& handler)
-        : io_context_(io_context)
-        , handler_(handler)
-        , session_(nullptr)
+    explicit client(const std::string& host, uint16_t port)
+        : io_context_()
+        , handler_()
+        , connector_(io_context_, handler_)
     {
-
+        using namespace std::placeholders;
+        connector_.register_new_session_callback(std::bind(&client::new_session, this, _1));
+        connector_.register_close_session_callback(std::bind(&client::close_session, this, _1));
+        connector_.connect(host, port);
+        thread_ = std::thread([this]() { io_context_.run(); });
     }
 
     virtual ~client()
     {
-        close();
+        stop();
+        thread_.join();
     }
 
-public:
-    bool connect(const std::string& host, std::uint16_t port)
+    void stop()
     {
-        try {
-            connect(host, std::to_string(port));
-        } 
-        catch (const std::exception& e) {
-            LOG_ERROR("tcp.client.connect.error: %s", e.what());
-            return false;
-        }
-        return true;
+        if (!session_) return;
+        // must manually stop, 
+        // because read() of session keeps one ref_counter, 
+        // and use_count will never be 0 
+        session_->stop(); 
+        session_.reset(); 
     }
 
-    void close()
+    void write(const void* data, size_t size)
     {
-        if (session_) {
-            session_->stop();
+        wait_for_session();
+        session_->write(data, size);
+    }
+
+    void write(const std::string& data)
+    {
+        wait_for_session();
+        session_->write(data.data(), data.size());
+    }
+
+protected:
+    void new_session(session_ptr session)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        // here client only manages one session, 
+        // so stop previous session.
+        this->stop();
+        session_ = session;
+        cond_.notify_one();
+    }
+
+    void close_session(session_ptr session)
+    {
+        // Note!!! No session->stop() here, here close_session 
+        // is originally invoked by session->stop()
+        // then session->stop() again, again, and again... then crash...
+        session_.reset();
+    }
+
+    void wait_for_session()
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        while (!session_) {
+            cond_.wait(lock);
         }
     }
 
 protected:
-    void connect(const std::string& host, const std::string& port)
-    {
-        boost::asio::ip::tcp::socket socket(io_context_);
-        boost::asio::ip::tcp::resolver resolver(io_context_);
-        boost::asio::connect(socket, resolver.resolve(host, port));
-        session_ = std::make_shared<session>(0, std::move(socket), handler_);
-        session_->start();
-    }
-
-protected:
-    boost::asio::io_context& io_context_;
-    handler_type& handler_;
+    boost::asio::io_context io_context_;
+    handler_type handler_;
+    connector_type connector_;
     session_ptr session_;
+    std::thread thread_;
+    std::mutex mutex_;
+    std::condition_variable cond_;
 
 };
 
