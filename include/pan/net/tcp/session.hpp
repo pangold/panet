@@ -105,8 +105,8 @@ public:
     {
         LOG_INFO("tcp.session.start: id<%d>:%s", id(), to_string().c_str());
         // Here are two options to callback session started state.
-        if (start_callback_) start_callback_(shared_from_this());
         handler_.on_session_start(shared_from_this());
+        if (start_callback_) start_callback_(shared_from_this());
         read();
     }
 
