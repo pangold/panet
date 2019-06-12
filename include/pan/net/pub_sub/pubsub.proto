@@ -1,0 +1,33 @@
+syntax = "proto2";
+
+package Pango.PubSub;
+
+message Topic {
+    required string name = 1;
+    required string content = 2;
+    optional string who = 3;     // who publishes this topic?
+    optional int32 number = 4;
+    optional int64 datetime = 5;
+}
+
+message Publish {
+    optional Topic topic = 1;
+    optional bool reply = 2;
+}
+
+message Subscribe {
+    optional string topic = 1;   // what topic do you want to subscribe?
+    optional bool reply = 2;
+}
+
+message Cancel {
+    optional string topic = 1;   // what topic do you want to unsubscribe?
+    optional bool reply = 2;
+}
+
+message History {
+    optional string topic = 1;
+    optional int32 start_id = 2;
+    optional int32 count = 3;
+    optional bool reply = 4;
+}
