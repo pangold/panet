@@ -25,8 +25,9 @@ public:
     { }
 
     std::string name() const noexcept { return name_; }
-    pool_type& pool() { return pool_; }
-    codec_type& codec() { return codec_; }
+    pool_type& pool() noexcept { return pool_; }
+    codec_type& codec() noexcept { return codec_; }
+    
 protected:
     std::string name_;
     pool_type& pool_;
