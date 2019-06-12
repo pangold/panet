@@ -49,19 +49,15 @@ public:
         publish_.publish(topic, content);
     }
 
-    void subscribe(const std::string& topic)
+    void subscribe(const std::string& topic, topic_callback_type cb)
     {
         subscribe_.subscribe(topic);
+        notify_.register_topic_callback(std::move(cb));
     }
 
     void cancel(const std::string& topic)
     {
         cancel_.cancel(topic);
-    }
-
-    void register_topic_callback(topic_callback_type cb)
-    {
-        notify_.register_topic_callback(std::move(cb));
     }
     
 protected:

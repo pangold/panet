@@ -23,22 +23,16 @@ public:
         handler_.publish(topic, content);
     }
 
-    void subscribe(const std::string& topic)
+    void subscribe(const std::string& topic, topic_callback_type cb)
     {
         wait_for_session();
-        handler_.subscribe(topic);
+        handler_.subscribe(topic, std::move(cb));
     }
 
     void cancel(const std::string& topic)
     {
         wait_for_session();
         handler_.cancel(topic);
-    }
-
-    void register_topic_callback(topic_callback_type cb)
-    {
-        wait_for_session();
-        handler_.register_topic_callback(std::move(cb));
     }
 };
 
