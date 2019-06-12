@@ -13,6 +13,7 @@ class handler_base {
 public:
     typedef session<Inherit> session_type;
     typedef typename session_type::pointer session_ptr;
+    typedef typename session_type::weak session_weak;
 
     virtual ~handler_base() { }
 

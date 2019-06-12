@@ -36,6 +36,7 @@ public:
     typedef std::size_t key_type;
     typedef session<handler_type> value_type;
     typedef std::shared_ptr<value_type> pointer;
+    typedef std::weak_ptr<value_type> weak;
     typedef void* content_type;
     typedef std::function<void(pointer)> start_callback_type;
     typedef std::function<void(pointer)> close_callback_type;
