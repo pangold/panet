@@ -26,6 +26,7 @@ class handler : public protocol::datagram_handler_base<handler<Storage>> {
 public:
     typedef Storage storage_type;
     typedef typename notify_type::topic_callback_type topic_callback_type;
+    //FIXME: std::list to std::map, to improve performance
     typedef std::map<std::string, std::list<session_ptr>> subscriber_map;
     //
     //typedef std::shared_ptr<Pango::PubSub::Topic> topic_ptr;
@@ -61,6 +62,17 @@ public:
     }
     
 protected:
+    void on_extra_session_stop(session_ptr session) 
+    {
+        for (auto& e : subscribers_) {
+            auto& subers = e.second;
+            auto it = std::find(subers.begin(), subers.end(), session);
+            if (it != subers.end()) {
+                subers.erase(it);
+            }
+        }
+    }
+
     void on_datagram(session_ptr session, datagram_ptr datagram)
     {
         // protobuf::codec is responsible to dispatch protobuf message 
