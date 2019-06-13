@@ -68,11 +68,7 @@ private:
         topic->set_number(1);
         // datetime's microseconds
         topic->set_datetime(std::chrono::steady_clock().now().time_since_epoch().count() / 1000);
-        //for (auto it = subscribers.begin(); it != subscribers.end(); ++it) {
-        //    codec().send(it, topic);
-        //}
         for (auto e : subscribers) {
-            // session_weak ee = e.lock();
             codec().send(e, topic);
         }
         reply(session);

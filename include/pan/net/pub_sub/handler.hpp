@@ -28,10 +28,6 @@ public:
     typedef typename notify_type::topic_callback_type topic_callback_type;
     //FIXME: std::list to std::map, to improve performance
     typedef std::map<std::string, std::list<session_ptr>> subscriber_map;
-    //
-    //typedef std::shared_ptr<Pango::PubSub::Topic> topic_ptr;
-    //typedef std::list<topic_ptr> topic_list;
-    //typedef std::map<topic_key, topic_list> topic_map;
     
     handler() 
         : codec_()
@@ -83,7 +79,6 @@ protected:
 protected:
     codec_type codec_;
     subscriber_map subscribers_;
-    // message_queue_type mq_;
     cancel_type cancel_;
     history_type history_;
     notify_type notify_;
