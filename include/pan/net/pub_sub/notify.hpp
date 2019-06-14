@@ -15,8 +15,8 @@ public:
     typedef std::shared_ptr<message_type> message_ptr;
     typedef std::function<void(message_ptr)> topic_callback_type;
 
-    processor(pool_type& pool, codec_type& codec)
-        : _Mybase("Pango.PubSub.Topic", pool, codec)
+    processor(pool_type& pool, codec_type& codec, subscriber_map& subs)
+        : _Mybase("Pango.PubSub.Topic", pool, codec, subs)
     {
         using namespace std::placeholders;
         auto cb = std::bind(&processor::on_message, this, _1, _2);

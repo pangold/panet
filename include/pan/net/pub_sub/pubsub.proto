@@ -11,23 +11,27 @@ message Topic {
 }
 
 message Publish {
-    optional Topic topic = 1;
-    optional bool reply = 2;
+    optional int32 number = 1;
+    optional Topic topic = 2;
+    optional bool reply = 3;
 }
 
 message Subscribe {
-    optional string topic = 1;   // what topic do you want to subscribe?
-    optional bool reply = 2;
+    optional int32 number = 1;
+    optional string topic = 2;   // what topic do you want to subscribe?
+    optional bool reply = 3;
 }
 
 message Cancel {
-    optional string topic = 1;   // what topic do you want to unsubscribe?
-    optional bool reply = 2;
+    optional int32 number = 1;
+    optional string topic = 2;   // what topic do you want to unsubscribe?
+    optional bool reply = 3;
 }
 
 message History {
-    optional string topic = 1;
-    optional int32 start_id = 2;
-    optional int32 count = 3;
-    optional bool reply = 4;
+    optional int32 number = 1;
+    optional string topic = 2;
+    optional int64 start_time = 3;
+    optional int32 count = 4;
+    optional bool reply = 5;
 }

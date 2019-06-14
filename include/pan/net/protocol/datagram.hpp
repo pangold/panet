@@ -109,7 +109,7 @@ bool datagram::from(istream& is)
 {
     is.read(length());
     // completed?
-    if (is.remaining_size() < length()) 
+    if (is.remaining_size() < static_cast<size_t>(length())) 
         return false;
     is.read(id());
     is.read(name_size());

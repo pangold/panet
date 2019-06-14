@@ -12,7 +12,7 @@ public:
     server(uint16_t port, bool use_thread = false)
         : tcp::server<handler<Storage>>(port, use_thread)
     {
-
+        handler_.load();
     }
 
 };

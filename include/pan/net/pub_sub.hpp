@@ -4,5 +4,6 @@
 #include <pan/net/pub_sub/handler.hpp>
 #include <pan/net/pub_sub/client.hpp>
 #include <pan/net/pub_sub/server.hpp>
+#include <pan/net/pub_sub/storage_base.hpp>
 
 #endif // __PAN_NET_PUB_SUB_HPP__
