@@ -7,18 +7,15 @@
 namespace pan { namespace net { namespace echo {
 
 class datagram_client : public tcp::client<datagram_client_handler> {
-    typedef tcp::client<datagram_client_handler> _Mybase;
 public:
     datagram_client(const std::string& host, uint16_t port)
-        : _Mybase(host, port)
+        : tcp::client<datagram_client_handler>(host, port)
     { }
 
     void write_datagram(const std::string& name, const std::string& data)
     {
-        protocol::datagram datagram(name, data);
-        std::string str;
-        protocol::datagram_to_data(str, datagram);
-        write(str.data(), str.size());
+        pool_.wait();
+        handler_.write_datagram(name, data);
     }
 };
 

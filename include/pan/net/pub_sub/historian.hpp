@@ -1,5 +1,5 @@
-#ifndef __PAN_NET_PUBSUB_CANCEL_HPP__
-#define __PAN_NET_PUBSUB_CANCEL_HPP__
+#ifndef __PAN_NET_PUBSUB_HISTORIAN_HPP__
+#define __PAN_NET_PUBSUB_HISTORIAN_HPP__
 
 #include <pan/base.hpp>
 #include <pan/net/protobuf.hpp>
@@ -8,29 +8,38 @@
 namespace pan { namespace net { namespace pubsub {
 
 template <typename Session>
-class processor<Session, Pango::PubSub::Cancel> : public processor_base<Session> {
-    typedef processor_base<Session> _Mybase;
+class historian : public processor_base<Session> {
 public:
-    typedef Pango::PubSub::Cancel message_type;
+    typedef Pango::PubSub::History message_type;
+    typedef Pango::PubSub::Topic topic_type;
     typedef std::shared_ptr<message_type> message_ptr;
-    typedef std::function<void(session_ptr, message_ptr)> complete_callback_type;
-    typedef std::function<void(const std::string&)> reply_callback_type;
+    typedef std::shared_ptr<topic_type> topic_ptr;
+    typedef std::vector<topic_ptr> topic_list;
+    typedef std::function<void(session_ptr, message_ptr, topic_list&)> history_operation_type;
+    typedef std::function<void(const std::string&, int64_t, int32_t)> reply_callback_type;
     typedef std::tuple<message_ptr, reply_callback_type> reply_operation;
+    typedef std::map<int32_t, reply_operation> confirmation_map;
 
-    processor(pool_type& pool, codec_type& codec, subscriber_map& subs)
-        : _Mybase("Pango.PubSub.Cancel", pool, codec, subs)
+    historian(codec_type& codec, subscriber_map& subs)
+        : processor_base<Session>("Pango.PubSub.History", codec, subs)
     {
         using namespace std::placeholders;
-        auto cb = std::bind(&processor::on_message, this, _1, _2);
+        auto cb = std::bind(&historian::on_message, this, _1, _2);
         codec.register_callback<message_type>(cb);
+    }
+
+    // for client side.
+    void set_session(session_ptr session)
+    {
+        session_ = session;
     }
 
     // for server side.
     // after processing sub request, you can do some extra thing, 
     // such as store it in DB through this callback
-    void register_complete_callback(complete_callback_type cb)
+    void set_history_operation(history_operation_type op)
     {
-        complete_callback_ = std::move(cb);
+        history_operation_ = std::move(op);
     }
 
     // for client side.
@@ -40,15 +49,19 @@ public:
     }
 
     // for client side.
-    void cancel(const std::string& topic)
+    void history(const std::string& topic, int64_t start_time, int count)
     {
-        assert(!pool().empty());
         static int32_t number = 0;
-        auto& session = pool().begin()->second;
         auto message = std::make_shared<message_type>();
         message->set_number(++number);
         message->set_topic(topic);
-        codec().send(session, message);
+        message->set_start_time(start_time);
+        message->set_count(count);
+        if (!session_) {
+            LOG_ERROR("pubsub.history: session is not ready yet");
+            return;
+        }
+        codec().send(session_, message);
         confirmations_[number] = std::make_tuple(message, reply_callback_);
         // TODO: post timer queue of io_services(event loop)
         // to handle timeout...
@@ -62,7 +75,7 @@ private:
         if (message->has_reply()) {
             on_reply(session, message);
         } else {
-            on_cancel(session, message);
+            on_history(session, message);
             reply(session, message);
         }
     }
@@ -73,19 +86,21 @@ private:
         auto it = confirmations_.find(message->number());
         if (it != confirmations_.end()) {
             auto& callback = std::get<1>(it->second);
-            if (callback) callback(message->topic());
+            if (callback) callback(message->topic(), message->start_time(), message->count());
             confirmations_.erase(message->number());
         }
     }
 
     // request to server
-    void on_cancel(session_ptr session, message_ptr message)
+    void on_history(session_ptr session, message_ptr message)
     {
-        auto& subers = subscribers()[message->topic()];
-        auto it = subers.find(session->to_string());
-        if (it != subers.end()) {
-            if (complete_callback_) complete_callback_(session, message);
-            subers.erase(it);
+        if (!history_operation_) return;
+        // fetch records from storage module, 
+        // and then, send them back, just like action "publish".
+        topic_list topics;
+        history_operation_(session, message, topics);
+        for (auto& topic : topics) {
+            codec().send(session, topic);
         }
     }
 
@@ -97,12 +112,13 @@ private:
     }
 
 private:
-    std::map<int32_t, reply_operation> confirmations_;
-    complete_callback_type complete_callback_;
+    session_ptr session_;
+    confirmation_map confirmations_;
+    history_operation_type history_operation_;
     reply_callback_type reply_callback_;
 
 };
 
 }}}
 
-#endif // __PAN_NET_PUBSUB_CANCEL_HPP__
+#endif // __PAN_NET_PUBSUB_HISTORIAN_HPP__

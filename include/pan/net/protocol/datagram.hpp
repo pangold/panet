@@ -70,6 +70,7 @@ private:
     int32_t length_;
 
 };
+typedef std::shared_ptr<protocol::datagram> datagram_ptr;
 
 datagram::datagram(const std::string& name, const std::string& data)
     : id_(0)

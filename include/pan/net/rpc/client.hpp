@@ -2,14 +2,14 @@
 #define __PAN_NET_RPC_CLIENT_HPP__
 
 #include <pan/net/tcp.hpp>
-#include <pan/net/rpc/handler.hpp>
+#include <pan/net/rpc/client_handler.hpp>
 
 namespace pan { namespace net { namespace rpc {
 
-class client : private tcp::client<rpc::handler> {
+class client : private tcp::client<rpc::client_handler> {
 public:
     client(const std::string& host, uint16_t port, size_t timeout = 3000)
-        : tcp::client<handler>(host, port)
+        : tcp::client<rpc::client_handler>(host, port)
     {
         handler_.set_timeout(timeout);
     }
@@ -17,13 +17,13 @@ public:
     R call(const std::string& name, Args... args)
     {
         std::string error;
-        wait_for_session();
+        pool_.wait();
         return handler_.call<R, Args...>(error, name, std::forward<Args>(args)...);
     }
     template <typename R, typename... Args>
     R call2(std::string& error, const std::string& name, Args... args)
     {
-        wait_for_session();
+        pool_.wait();
         return handler_.call<R, Args...>(error, name, std::forward<Args>(args)...);
     }
 };

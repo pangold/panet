@@ -1,26 +1,29 @@
 #ifndef __PAN_NET_PROXY_UPSTREAM_HPP__
 #define __PAN_NET_PROXY_UPSTREAM_HPP__
 
-#include <functional>
-#include <pan/net/protocol.hpp>
+#include <string>
+#include <iostream>
+#include <pan/net/proxy/upstream_handler.hpp>
+#include <pan/net/tcp.hpp>
 
 namespace pan { namespace net { namespace proxy {
 
-class upstream : public protocol::datagram_handler_base<upstream> {
+class upstream : public tcp::clients<proxy::upstream_handler> {
 public:
-    typedef std::function<void(session_ptr, datagram_ptr)> message_callback_type;
-    void register_message_callback(message_callback_type cb)
+    upstream(const std::string& host, uint16_t port)
+        : tcp::clients<proxy::upstream_handler>(host, port)
+    { }
+
+    template <typename Callback>
+    void register_message_callback(Callback cb)
     {
-        message_callback_ = std::move(cb);
+        handler_.register_message_callback(cb);
     }
-private:
-    void on_datagram(session_ptr session, datagram_ptr datagram)
+
+    bool write(const std::string& name, const std::string& data)
     {
-        if (message_callback_)
-            message_callback_(session, datagram);
+        return handler_.write(name, data.data(), data.size());
     }
-private:
-    message_callback_type message_callback_;
 };
 
 }}}

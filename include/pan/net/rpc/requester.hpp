@@ -7,26 +7,19 @@
 
 namespace pan { namespace net { namespace rpc {
 
-/* 
- * It's a specialization of protobuf::processor<Session, Message>
- * for processing protobuf message Pango::Rpc::Request
- * But, where is this message from? Client. 
- * So, mostly, here's server.
- */
 template <typename Session>
-class processor<Session, Pango::Rpc::Request> : public processor_base<Session> {
-    typedef processor_base<Session> _Mybase;
+class requester : public processor_base<Session> {
     typedef stream_executor<istream, ostream> executor_type;
 public:
     typedef Pango::Rpc::Request message_type;
     typedef Pango::Rpc::Respond reply_type;
     typedef std::shared_ptr<message_type> message_ptr;
 
-    processor(pool_type& pool, codec_type& codec)
-        : _Mybase("Pango.Rpc.Request", pool, codec)
+    explicit requester(codec_type& codec)
+        : processor_base<Session>("Pango.Rpc.Request", codec)
     {
         using namespace std::placeholders;
-        auto cb = std::bind(&processor::on_message, this, _1, _2);
+        auto cb = std::bind(&requester::on_message, this, _1, _2);
         codec.register_callback<message_type>(cb);
     }
 
@@ -65,6 +58,7 @@ private:
 
 private:
     executor_type executor_;
+
 };
 
 }}}

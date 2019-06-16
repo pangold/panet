@@ -3,9 +3,9 @@
 
 #include <map>
 #include <tuple>
-#include <pan/net/proxy/upstream.hpp>
+#include <pan/net/tcp.hpp>
 #include <pan/net/protocol.hpp>
-#include <pan/net/tcp/clients.hpp>
+#include <pan/net/proxy/upstream.hpp>
 
 namespace pan { namespace net { namespace proxy {
 
@@ -20,7 +20,9 @@ class handler : public protocol::datagram_handler_base<handler> {
     typedef std::tuple<int64_t, session_ptr, datagram_ptr> confirm_item_tuple;
     typedef std::map<int64_t, confirm_item_tuple> confirm_queue;
 public:
-    handler() 
+    explicit handler(session_pool_type& pool)
+        : protocol::datagram_handler_base<handler>(pool)
+        , upstream_("", 0)
     {
         using namespace std::placeholders;
         auto cb = std::bind(&handler::on_upstream, this, _1, _2);
@@ -64,7 +66,7 @@ private:
     // b. change this datagram::id to old_id
     // c. reply throught confirm_queue[id]::session::write(not param 1)
     // d. remove confirm_queue[id](or extension like store this message)
-    void on_upstream(upstream::session_ptr session, upstream::datagram_ptr datagram)
+    void on_upstream(upstream_handler::session_ptr session, upstream_handler::datagram_ptr datagram)
     {
         // TODO: process messages that reply from service center.
 
@@ -80,7 +82,7 @@ private:
     }
 
 private:
-    tcp::clients<upstream> upstream_;
+    upstream upstream_;
     service_list services_;
     confirm_queue confirm_queue_;
 

@@ -1,5 +1,5 @@
-#ifndef __PAN_NET_PUBSUB_PUBLISH_HPP__
-#define __PAN_NET_PUBSUB_PUBLISH_HPP__
+#ifndef __PAN_NET_PUBSUB_PUBLISHER_HPP__
+#define __PAN_NET_PUBSUB_PUBLISHER_HPP__
 
 #include <pan/base.hpp>
 #include <pan/net/protobuf.hpp>
@@ -8,21 +8,27 @@
 namespace pan { namespace net { namespace pubsub {
 
 template <typename Session>
-class processor<Session, Pango::PubSub::Publish> : public processor_base<Session> {
-    typedef processor_base<Session> _Mybase;
+class publisher : public processor_base<Session> {
 public:
     typedef Pango::PubSub::Publish message_type;
     typedef std::shared_ptr<message_type> message_ptr;
     typedef std::function<void(session_ptr, message_ptr)> complete_callback_type;
     typedef std::function<void(const std::string&, const std::string&)> reply_callback_type;
     typedef std::tuple<message_ptr, reply_callback_type> reply_operation;
+    typedef std::map<int32_t, reply_operation> confirmation_map;
 
-    processor(pool_type& pool, codec_type& codec, subscriber_map& subs)
-        : _Mybase("Pango.PubSub.Publish", pool, codec, subs)
+    publisher(codec_type& codec, subscriber_map& subs)
+        : processor_base<Session>("Pango.PubSub.Publish", codec, subs)
     {
         using namespace std::placeholders;
-        auto cb = std::bind(&processor::on_message, this, _1, _2);
+        auto cb = std::bind(&publisher::on_message, this, _1, _2);
         codec.register_callback<message_type>(cb);
+    }
+
+    // for client side.
+    void set_session(session_ptr session)
+    {
+        session_ = session;
     }
 
     // for server side.
@@ -42,10 +48,8 @@ public:
     // for client side.
     void publish(const std::string& name, const std::string& content)
     {
-        assert(!pool().empty());
         // this number is for confirmation(not the same to topic::number)
         static int32_t number = 0; 
-        auto& session = pool().begin()->second;
         auto message = std::make_shared<message_type>();
         auto topic = message->mutable_topic();
         message->set_number(++number);
@@ -54,7 +58,11 @@ public:
         // no datetime, but at server's side, 
         // because server side's clock is more reliable.
         // no number(id), but at server's side too.
-        codec().send(session, message);
+        if (!session_) {
+            LOG_ERROR("pubsub.publish: session is not ready yet");
+            return;
+        }
+        codec().send(session_, message);
         confirmations_[number] = std::make_tuple(message, reply_callback_);
         // TODO: post timer queue of io_services(event loop)
         // to handle timeout...
@@ -109,7 +117,8 @@ private:
     }
 
 private:
-    std::map<int32_t, reply_operation> confirmations_;
+    session_ptr session_;
+    confirmation_map confirmations_;
     complete_callback_type complete_callback_;
     reply_callback_type reply_callback_;
 
@@ -117,4 +126,4 @@ private:
 
 }}}
 
-#endif // __PAN_NET_PUBSUB_PUBLISH_HPP__
+#endif // __PAN_NET_PUBSUB_PUBLISHER_HPP__

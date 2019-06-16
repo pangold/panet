@@ -2,14 +2,14 @@
 #define __PAN_NET_RPC_SERVER_HPP__
 
 #include <pan/net/tcp.hpp>
-#include <pan/net/rpc/handler.hpp>
+#include <pan/net/rpc/server_handler.hpp>
 
 namespace pan { namespace net { namespace rpc {
 
-class server : public tcp::server<rpc::handler> {
+class server : public tcp::server<rpc::server_handler> {
 public:
-    server(uint16_t port)
-        : tcp::server<handler>(port)
+    explicit server(uint16_t port)
+        : tcp::server<rpc::server_handler>(port)
     {
 
     }

@@ -9,9 +9,17 @@ namespace pan { namespace net { namespace protocol {
 
 template <typename Inherit>
 class datagram_handler_base : public tcp::handler_base<Inherit> {
+    friend class session_type;
 public:
     typedef std::shared_ptr<protocol::datagram> datagram_ptr;
 
+    explicit datagram_handler_base(session_pool_type& pool)
+        : tcp::handler_base<Inherit>(pool)
+    { }
+
+    virtual ~datagram_handler_base() { }
+
+protected:
     // decode
     size_t on_message(session_ptr session, const void* data, size_t size)
     {

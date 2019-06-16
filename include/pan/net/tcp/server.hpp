@@ -1,38 +1,26 @@
 #ifndef __PAN_NET_TCP_SERVER_HPP__
 #define __PAN_NET_TCP_SERVER_HPP__
 
-#include <boost/asio.hpp>
-#include <pan/base.hpp>
+#include <pan/net/tcp/bridge.hpp>
 #include <pan/net/tcp/session.hpp>
+#include <pan/net/tcp/session_pool.hpp>
+#include <pan/net/tcp/acceptor.hpp>
 
 namespace pan { namespace net { namespace tcp {
 
-/*
- * Don't really need to manage sessions here, 
- * In most situation, handler needs to interact with session_pool, 
- * 
- * In old implementation, we need to pass each sessions into hander.
- * Then, we need to manage two associated session pools at the same time.
- * And have to do a bit more steps to synchronize two connection pools. 
- * That implementation was ugly.
- * 
- * So far, any session pool here or in handler is just an option.
- * Two session pool here and in handler are totaly individual.
- * And be synchronized by session's interal member function start/stop().
- */
 template <typename Handler>
 class server : public pan::noncopyable {
 public:
     typedef Handler handler_type;
     typedef acceptor<handler_type> acceptor_type;
     typedef session<handler_type> session_type;
-    typedef typename session_type::key_type key_type;
+    typedef session_pool<handler_type> session_pool_type;
     typedef typename session_type::pointer session_ptr;
-    typedef pan::map<key_type, session_ptr> pool_type;
 
     explicit server(uint16_t port, bool use_thread = false)
         : io_context_()
-        , handler_()
+        , pool_()
+        , handler_(pool_)
         , acceptor_(io_context_, port, handler_)
         , use_thread_(use_thread)
     {
@@ -56,20 +44,19 @@ public:
 protected:
     void new_session(session_ptr session)
     {
-        pool_.insert(session->id(), session);
+        pool_.insert(session);
     }
 
     void close_session(session_ptr session)
     {
-        pool_.remove(session->id());
+        pool_.remove(session);
     }
 
 protected:
     boost::asio::io_context io_context_;
+    session_pool_type pool_;
     handler_type handler_;
     acceptor_type acceptor_;
-    // FIXME: pool needs to be optimized.
-    pool_type pool_;
     std::thread thread_;
     bool use_thread_;
     

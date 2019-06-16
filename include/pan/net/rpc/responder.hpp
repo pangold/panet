@@ -7,27 +7,27 @@
 
 namespace pan { namespace net { namespace rpc {
 
-/* 
- * It's a specialization of protobuf::processor<Session, Message>
- * for processing protobuf message Pango::Rpc::Respond
- */
 template <typename Session>
-class processor<Session, Pango::Rpc::Respond> : public processor_base<Session> {
-    typedef processor_base<Session> _Mybase;
-    typedef pan::map<std::int32_t, std::shared_ptr<Pango::Rpc::Respond>> respond_pool;
+class responder : public processor_base<Session> {
     static const unsigned short MaxRequest = 32;
 public:
     typedef Pango::Rpc::Request request_type;
     typedef Pango::Rpc::Respond message_type;
     typedef std::shared_ptr<message_type> message_ptr;
+    typedef pan::map<std::int32_t, message_ptr> respond_pool;
 
-    processor(pool_type& pool, codec_type& codec)
-        : _Mybase("Pango.Rpc.Respond", pool, codec)
+    explicit responder(codec_type& codec)
+        : processor_base<Session>("Pango.Rpc.Respond", codec)
         , timeout_(3000)
     {
         using namespace std::placeholders;
-        auto cb = std::bind(&processor::on_message, this, _1, _2);
+        auto cb = std::bind(&responder::on_message, this, _1, _2);
         codec.register_callback<message_type>(cb);
+    }
+
+    void set_session(session_ptr session)
+    {
+        session_ = session;
     }
 
     void set_timeout(size_t timeout)
@@ -65,9 +65,9 @@ private:
         request->set_id(index);
         request->set_name(name);
         request->set_params(os.data(), os.size());
-        for (auto& e : pool()) {
-            codec().send(e.second, request);
-        }
+        assert(session_);
+        if (!session_) throw std::exception("session is not ready yet");
+        codec().send(session_, request);
     }
 
     template <typename R>
@@ -97,9 +97,11 @@ private:
     }
 
 private:
+    session_ptr session_;
     size_t timeout_;
     respond_pool respond_pool_;
     sequence<MaxRequest> sequencer_;
+
 };
 
 }}}
