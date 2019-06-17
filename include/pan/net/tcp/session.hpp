@@ -81,15 +81,15 @@ public:
     }
 
     template <typename T>
-    void set_content(T* content)
+    void set_context(T context)
     {
-        content_ = reinterpret_cast<void*>(content);
+        context_ = context;
     }
 
     template <typename T>
-    T* content() const
+    T context() const
     {
-        return reinterpret_cast<T*>(content_);
+        return pan::any_cast<T>(context_);
     }
 
     void register_start_callback(start_callback_type cb)
@@ -164,7 +164,7 @@ protected:
     boost::asio::ip::tcp::socket socket_;
     buffer_type read_buffer_;
     handler_type& handler_;
-    content_type content_;
+    pan::any context_;
     start_callback_type start_callback_;
     close_callback_type close_callback_;
 
