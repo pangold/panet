@@ -4,19 +4,18 @@
 #include <memory>
 #include <functional>
 #include <pan/net/protocol.hpp>
-#include <pan/net/protobuf.hpp>
 #include <pan/net/rpc/rpc.pb.h>
 #include <pan/net/rpc/responder.hpp>
 
 namespace pan { namespace net { namespace rpc {
 
-class client_handler : public protocol::datagram_handler_base<client_handler> {
+class client_handler : public tcp::handler_base<client_handler> {
     friend class session_type;
-    typedef protobuf::codec<session_type> codec_type;
+    typedef protocol::codec<session_type> codec_type;
     typedef responder<session_type> responder_type;
 public:
     explicit client_handler(session_pool_type& pool)
-        : protocol::datagram_handler_base<client_handler>(pool)
+        : tcp::handler_base<client_handler>(pool)
         , codec_()
         , responder_(codec_)
     {
@@ -35,20 +34,20 @@ public:
     }
 
 protected:
-    void on_session_start(session_ptr session)
+    void on_session_start(session_ptr session) override
     {
         responder_.set_session(session);
     }
 
-    void on_session_stop(session_ptr session)
+    void on_session_stop(session_ptr session) override
     {
         responder_.set_session(nullptr);
     }
 
-    void on_datagram(session_ptr session, datagram_ptr datagram)
+    size_t on_message(session_ptr session, const void* data, size_t size) override
     {
-        // protobuf::codec has responsibilities to dispatch
-        codec_.on_message(session, *datagram);
+        // protocol::codec has responsibilities to dispatch
+        return codec_.on_message(session, data, size);
     }
 
 protected:

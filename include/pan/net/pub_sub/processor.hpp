@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 #include <pan/net/protocol.hpp>
-#include <pan/net/protobuf/codec.hpp>
 
 namespace pan { namespace net { namespace pubsub {
 
@@ -15,7 +14,7 @@ public:
     typedef Session session_type;
     typedef typename session_type::pointer session_ptr;
     typedef typename session_type::weak session_weak;
-    typedef protobuf::codec<session_type> codec_type;
+    typedef protocol::codec<session_type> codec_type;
     typedef std::map<std::string, session_ptr> session_map;
     typedef std::map<std::string, session_map> subscriber_map;
 

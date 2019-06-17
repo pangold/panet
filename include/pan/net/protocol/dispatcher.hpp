@@ -4,7 +4,7 @@
 #include <map>
 #include <memory>
 #include <functional>
-#include <pan/net/protobuf/helper.hpp>
+#include <pan/net/protocol/helper.hpp>
 
 namespace pan { namespace net { namespace protobuf {
 

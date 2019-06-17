@@ -1,14 +1,18 @@
 #ifndef __PAN_NET_PROTOCOL_DATAGRAM_HPP__
 #define __PAN_NET_PROTOCOL_DATAGRAM_HPP__
 
+#include <memory>
 #include <cstdint>
 #include <string>
 #include <pan/base.hpp>
+#include <pan/net/protocol/helper.hpp>
 
 namespace pan { namespace net { namespace protocol {
 
 class datagram {
 public:
+    typedef std::shared_ptr<datagram> pointer;
+
     datagram() = default;
     datagram(const std::string& name, const std::string& data);
     datagram(const void* data, size_t size);
@@ -57,8 +61,10 @@ public:
     // serialize & parse
     bool from(const void* data, size_t size);
     bool from(istream& is);
+    bool from(const protobuf::message_ptr& message);
     bool to(ostream& os) const;
     bool to(std::string& str) const;
+    bool to(protobuf::message_ptr& message);
 
 private:
     int64_t id_; // id too
@@ -70,7 +76,6 @@ private:
     int32_t length_;
 
 };
-typedef std::shared_ptr<protocol::datagram> datagram_ptr;
 
 datagram::datagram(const std::string& name, const std::string& data)
     : id_(0)
@@ -141,6 +146,28 @@ bool datagram::to(ostream& os) const
     os.write(data().c_str(), data().size());
     os.write(ccrc()); // ccrc()? or checksum()?
     return true;
+}
+
+bool datagram::from(const protobuf::message_ptr& message)
+{
+    if (!message->SerializePartialToString(&data()))
+        return false;
+    set_data_size(data().size());
+    set_name(message->GetTypeName() + "\0");
+    set_name_size(name().size());
+    set_length(csize());
+    set_checksum(ccrc());
+    return true;
+}
+
+bool datagram::to(protobuf::message_ptr& message)
+{
+    auto temp = protobuf::create_protobuf_message(name());
+    if (temp->ParseFromString(data())) {
+        std::swap(message, temp);
+        return true;
+    }
+    return false;
 }
 
 }}}

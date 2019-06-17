@@ -3,8 +3,8 @@
 
 #include <string>
 #include <iostream>
-#include <pan/net/proxy/upstream_handler.hpp>
 #include <pan/net/tcp.hpp>
+#include <pan/net/proxy/upstream_handler.hpp>
 
 namespace pan { namespace net { namespace proxy {
 
@@ -15,9 +15,9 @@ public:
     { }
 
     template <typename Callback>
-    void register_message_callback(Callback cb)
+    void register_datagram_callback(Callback cb)
     {
-        handler_.register_message_callback(cb);
+        handler_.register_datagram_callback(cb);
     }
 
     bool write(const std::string& name, const std::string& data)

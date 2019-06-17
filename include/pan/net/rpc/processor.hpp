@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 #include <pan/net/protocol.hpp>
-#include <pan/net/protobuf/codec.hpp>
 
 namespace pan { namespace net { namespace rpc {
 
@@ -14,7 +13,7 @@ class processor_base {
 public:
     typedef Session session_type;
     typedef typename session_type::pointer session_ptr;
-    typedef protobuf::codec<session_type> codec_type;
+    typedef protocol::codec<session_type> codec_type;
 
     processor_base(const std::string& name, codec_type& codec)
         : name_(name)

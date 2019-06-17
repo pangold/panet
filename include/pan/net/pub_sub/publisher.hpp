@@ -2,7 +2,7 @@
 #define __PAN_NET_PUBSUB_PUBLISHER_HPP__
 
 #include <pan/base.hpp>
-#include <pan/net/protobuf.hpp>
+#include <pan/net/protocol.hpp>
 #include <pan/net/pub_sub/processor.hpp>
 
 namespace pan { namespace net { namespace pubsub {

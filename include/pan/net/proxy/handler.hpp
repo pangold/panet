@@ -12,21 +12,25 @@ namespace pan { namespace net { namespace proxy {
 /* 
  * A downstream handler for end-client.
  */
-class handler : public protocol::datagram_handler_base<handler> {
+class handler : public tcp::handler_base<handler> {
+    friend class session_type;
+public:
+    typedef protocol::codec<session_type> codec_type;
+    typedef codec_type::datagram_ptr datagram_ptr;
     typedef std::string service_name_type; // service name
     typedef std::string connect_info_type; // ip, port
     // typedef std::multimap<service_name_type, connect_info_type> service_list;
     typedef std::map<service_name_type, connect_info_type> service_list;
     typedef std::tuple<int64_t, session_ptr, datagram_ptr> confirm_item_tuple;
     typedef std::map<int64_t, confirm_item_tuple> confirm_queue;
-public:
+
     explicit handler(session_pool_type& pool)
-        : protocol::datagram_handler_base<handler>(pool)
+        : tcp::handler_base<handler>(pool)
         , upstream_("", 0)
     {
         using namespace std::placeholders;
-        auto cb = std::bind(&handler::on_upstream, this, _1, _2);
-        upstream_.register_message_callback(cb);
+        upstream_.register_datagram_callback(std::bind(&handler::on_upstream, this, _1, _2));
+        codec_.register_datagram_callback(std::bind(&handler::on_datagram, this, _1, _2));
         // init services_ from config;
         // temp
         // services_["service_center"] = "127.0.0.1:9999";
@@ -41,6 +45,10 @@ public:
     }
 
 private:
+    size_t on_message(session_ptr session, const void* data, size_t size) override
+    {
+        return codec_.on_message(session, data, size);
+    }
     // As downstream handler callback: do something as below, 
     // a. store old datagram::id(original id from client, need to set it back when reply)
     // b. change datagram::id to current time(unique for this process)
@@ -56,7 +64,7 @@ private:
         confirm_queue_[datagram->id()] = std::make_tuple(old_id, session, datagram);
         // transmit to upstream
         std::string data;
-        if (protocol::datagram_to_data(data, *datagram)) {
+        if (datagram->to(data)) {
             upstream_.write(services_[datagram->name()], data);
         }
     }
@@ -75,13 +83,14 @@ private:
             // recover old id
             datagram->set_id(std::get<0>(it->second));
             std::string data;
-            if (protocol::datagram_to_data(data, *datagram)) {
+            if (datagram->to(data)) {
                 std::get<1>(it->second)->write(data.data(), data.size());
             }
         }
     }
 
 private:
+    codec_type codec_;
     upstream upstream_;
     service_list services_;
     confirm_queue confirm_queue_;

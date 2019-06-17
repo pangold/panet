@@ -4,7 +4,6 @@
 #include <memory>
 #include <functional>
 #include <pan/net/protocol.hpp>
-#include <pan/net/protobuf.hpp>
 #include <pan/net/pub_sub/pubsub.pb.h>
 #include <pan/net/pub_sub/storage_base.hpp>
 #include <pan/net/pub_sub/canceler.hpp>
@@ -16,9 +15,9 @@
 namespace pan { namespace net { namespace pubsub {
 
 template <typename Storage>
-class server_handler : public protocol::datagram_handler_base<server_handler<Storage>> {
+class server_handler : public tcp::handler_base<server_handler<Storage>> {
     friend class session_type;
-    typedef protobuf::codec<session_type> codec_type;
+    typedef protocol::codec<session_type> codec_type;
     typedef canceler<session_type> canceler_type;
     typedef historian<session_type> historian_type;
     typedef notifier<session_type> notifier_type;
@@ -30,7 +29,7 @@ public:
     typedef Storage storage_type;
     
     explicit server_handler(session_pool_type& pool)
-        : protocol::datagram_handler_base<server_handler<Storage>>(pool)
+        : tcp::handler_base<server_handler<Storage>>(pool)
         , codec_()
         , subscribers_()
         , storage_()
@@ -58,7 +57,7 @@ public:
     }
     
 protected:
-    void on_session_start(session_ptr session)
+    void on_session_start(session_ptr session) override
     {
         // FIXME: context should be session::context()
         std::string context = session->to_string();
@@ -69,7 +68,7 @@ protected:
         }
     }
 
-    void on_session_stop(session_ptr session)
+    void on_session_stop(session_ptr session) override
     {
         for (auto& e : subscribers_) {
             auto it = e.second.find(session->to_string());
@@ -107,11 +106,11 @@ protected:
         return storage_.find_topic(context, message->topic(), message->start_time(), message->count(), topics);
     }
 
-    void on_datagram(session_ptr session, datagram_ptr datagram)
+    size_t on_message(session_ptr session, const void* data, size_t size) override
     {
-        // protobuf::codec is responsible to dispatch protobuf message 
+        // protocol::codec is responsible to dispatch protobuf message 
         // to cancel/history/notify/publish/subscribe message.
-        codec_.on_message(session, *datagram);
+        return codec_.on_message(session, data, size);
     }
     
 protected:

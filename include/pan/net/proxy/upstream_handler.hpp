@@ -2,43 +2,56 @@
 #define __PAN_NET_PROXY_UPSTREAM_HANDLER_HPP__
 
 #include <functional>
+#include <pan/net/tcp.hpp>
 #include <pan/net/protocol.hpp>
 
 namespace pan { namespace net { namespace proxy {
 
-class upstream_handler : public protocol::datagram_handler_base<upstream_handler> {
+class upstream_handler : public tcp::handler_base<upstream_handler> {
+    friend class session_type;
 public:
-    typedef std::function<void(session_ptr, datagram_ptr)> message_callback_type;
+    typedef protocol::codec<session_type> codec_type;
+    typedef codec_type::datagram_ptr datagram_ptr;
 
     explicit upstream_handler(session_pool_type& pool)
-        : protocol::datagram_handler_base<upstream_handler>(pool)
+        : tcp::handler_base<upstream_handler>(pool)
     {
 
     }
 
-    void register_message_callback(message_callback_type cb)
+    template <typename Callback>
+    void register_datagram_callback(Callback cb)
     {
-        message_callback_ = std::move(cb);
+        codec_.register_datagram_callback(std::move(cb));
     }
 
     bool write(const std::string& service_name, const void* data, size_t size)
     {
-        auto session = pool()[service_name];
-        if (session) {
+        if (auto session = pool()[service_name]) {
             session->write(data, size);
+            return true;
         }
-        return session != nullptr;
+        return false;
     }
 
 private:
-    void on_datagram(session_ptr session, datagram_ptr datagram)
+    void on_session_start(session_ptr session) override
     {
-        if (message_callback_)
-            message_callback_(session, datagram);
+
+    }
+
+    void on_session_stop(session_ptr) override
+    {
+
+    }
+
+    size_t on_message(session_ptr, const void* data, size_t size) override
+    {
+        return size;
     }
 
 private:
-    message_callback_type message_callback_;
+    codec_type codec_;
 
 };
 

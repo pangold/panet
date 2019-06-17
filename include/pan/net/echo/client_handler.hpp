@@ -16,16 +16,34 @@ public:
 
     void write(const std::string& data)
     {
-        pool().front()->write(data.data(), data.size());
+        if (!session_) {
+            LOG_ERROR("echo.client.handler.send: session is not ready yet.");
+            return;
+        }
+        session_->write(data.data(), data.size());
     }
 
 protected:
+    void on_session_start(session_ptr session) override
+    {
+        session_ = session;
+    }
+
+    void on_session_stop(session_ptr) override
+    {
+        session_.reset();
+    }
+
     size_t on_message(session_ptr, const void* data, size_t size) override
     {
         std::string msg((char*)data, (char*)data + size);
         LOG_INFO("echo client: recevied: %s", msg.c_str());
         return size;
     }
+
+private:
+    session_ptr session_;
+
 };
 
 }}}
