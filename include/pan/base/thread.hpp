@@ -40,14 +40,14 @@ public:
         }
     }
 
-    template <typename Function, typename... Args>
-    void push(Function func, Args... args)
+    template <typename F, typename... Args>
+    void push(F func, Args... args)
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (tasks_.size() > max_task_count_) {
             throw maximum_task_exception();
         }
-        tasks_.push(std::bind(&thread::run_task<Function, Args...>, this, func, std::forward<Args>(args)...));
+        tasks_.push(std::bind(func, std::forward<Args>(args)...));
         cond_.notify_one();
     }
 
@@ -80,30 +80,6 @@ private:
             std::unique_lock<std::mutex> lock(mutex_);
             cond_.wait(lock);
         }
-    }
-
-    template <typename Function, typename... Args>
-    void run_task(Function func, Args... args)
-    {
-        run_task_impl(func, std::forward<Args>(args)...);
-    }
-
-    template <typename Result, typename... Args>
-    void run_task_impl(std::function<Result(Args...)> func, Args... args) 
-    {
-        func(std::forward<Args>(args)...);
-    }
-
-    template <typename Result, typename... Args>
-    void run_task_impl(Result(*func)(Args...), Args... args) 
-    {
-        func(std::forward<Args>(args)...);
-    }
-
-    template <typename Result, typename Class, typename Object, typename... Args>
-    void run_task_impl(Result(Class::* func)(Args...), Object* obj, Args... args) 
-    {
-        (obj->*func)(std::forward<Args>(args)...);
     }
 
 private:
