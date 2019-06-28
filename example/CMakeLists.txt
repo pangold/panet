@@ -6,6 +6,7 @@ project (${name})
 # set where protobuf message files located.
 set (pub_sub_pb_file ../include/pan/net/pub_sub/pubsub.pb.cc)
 set (rpc_pb_file ../include/pan/net/rpc/rpc.pb.cc)
+set (pattern_pb_file ../include/pan/net/pattern/pattern.pb.cc)
 
 # set where dependent libraries located.
 set (dir_inc_pango ../include CACHE PATH "include of pango")
@@ -72,6 +73,12 @@ foreach (src ${src_file})
   if (${pro_name} MATCHES "rpc*")
     message ("${pro_name} is rpc project")
     set (file ${file} ${rpc_pb_file})
+  endif ()
+  
+  # add pattern.pb.cc(protobuf message src file) to "pattern" project
+  if (${pro_name} MATCHES "pattern*")
+    message ("${pro_name} is pattern project")
+    set (file ${file} ${pattern_pb_file})
   endif ()
 
   add_executable(${pro_name} ${file})

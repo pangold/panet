@@ -1,0 +1,38 @@
+syntax = "proto2";
+
+package Pango;
+
+// result code of Request
+enum ReplyCode {
+    NONE     = 0;               // for request
+    SUCCESS  = 1;               // respond success
+    FAILURE  = 2;               // respond failure
+    TIMEOUT  = 3;               // request timeout
+}
+
+// basic request that implement common request operation,
+// such as reply, reply status code...
+message Request {
+    required int32 id = 1;
+    required string data = 2;   // could be another protobuf message 
+    optional ReplyCode code = 3 [default = NONE];
+}
+
+// a request based on Request
+// inset into Request::data
+message PubSub {
+    enum Type {
+        PUBLISH = 0;
+        SUBSCRIBE = 1;
+        UNSUBSCRIBE = 2;
+    }
+    required Type type = 1;
+    required string topic = 2;
+    optional string content = 3; // only available when Publish
+}
+
+// real message that be subscribed or published.
+message Topic {
+    required string topic = 2;
+    optional string content = 3; // only available when Publish
+}
